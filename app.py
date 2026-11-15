@@ -21,6 +21,13 @@ def login_required(view_function):
 
     return wrapped_view
 
+@app.route("/welcome")
+def welcome():
+    if "user_id" in session:
+        return redirect("/")
+
+    return render_template("welcome.html")
+
 @app.route("/")
 @login_required
 def home():
@@ -454,6 +461,7 @@ def login():
 
         else:
             session.clear()
+            session.permanent = False
 
             session["user_id"] = user["id"]
             session["user_name"] = user["name"]
@@ -469,7 +477,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/")
+    return redirect("/welcome")
 
 if __name__ == "__main__":
     app.run(debug=True)
