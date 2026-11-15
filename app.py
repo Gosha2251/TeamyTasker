@@ -253,7 +253,8 @@ def team():
             cursor.execute("""
                 SELECT
                     u.team_id,
-                    t.name AS team_name
+                    t.name AS team_name,
+                    t.owner_id
                 FROM Users u
                 LEFT JOIN Teams t
                     ON u.team_id = t.id
@@ -261,6 +262,11 @@ def team():
             """, (user_id,))
 
             team_data = cursor.fetchone()
+            
+            is_owner = False
+
+            if team_data and team_data["owner_id"] == user_id:
+                is_owner = True
 
             members = []
 
@@ -283,7 +289,8 @@ def team():
     return render_template(
         "team.html",
         team=team_data,
-        members=members
+        members=members,
+        is_owner=is_owner
     )
 
 @app.route("/team/create", methods=["GET", "POST"])
@@ -318,11 +325,15 @@ def create_team():
                     else:
                         # Izveidojam komandu
                         cursor.execute("""
-                            INSERT INTO Teams (name)
-                            VALUES (%s)
-                        """, (team_name,))
+                            INSERT INTO Teams (name, owner_id)
+                            VALUES (%s, %s)
+                        """, (
+                            team_name,
+                            session["user_id"]
+                        ))
 
                         team_id = cursor.lastrowid
+
 
                         # Piesaistām izveidotāju jaunajai komandai
                         cursor.execute("""

@@ -42,7 +42,25 @@
 
         {% endif %}
 
-    {% else %}
+        {% if is_owner %}
+
+            <hr>
+
+            <h3>Komandas pārvaldība</h3>
+
+            <p>
+            Tu esi šīs komandas vadītājs.
+            </p>
+
+            <p>
+                <a href="/team/add-member">
+                    Pievienot dalībnieku
+                </a>
+            </p>
+
+        {% endif %}
+
+        {% else %}
 
         <p>
             Tu pašlaik neesi pievienots nevienai komandai.
