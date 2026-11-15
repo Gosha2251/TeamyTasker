@@ -3,13 +3,26 @@ from flask import Flask, render_template, request, redirect, session
 from dotenv import load_dotenv
 from database.db import get_connection
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
+def login_required(view_function):
+    @wraps(view_function)
+    def wrapped_view(*args, **kwargs):
+
+        if "user_id" not in session:
+            return redirect("/login")
+
+        return view_function(*args, **kwargs)
+
+    return wrapped_view
+
 @app.route("/")
+@login_required
 def home():
 
     connection = get_connection()
@@ -26,6 +39,7 @@ def home():
     )
 
 @app.route("/tasks")
+@login_required
 def tasks():
     connection = get_connection()
 
@@ -52,6 +66,7 @@ def tasks():
     )
 
 @app.route("/tasks/add", methods=["GET", "POST"])
+@login_required
 def add_task():
 
     if request.method == "POST":
@@ -84,6 +99,7 @@ def add_task():
     return render_template("add_task.html")
 
 @app.route("/tasks/<int:task_id>")
+@login_required
 def task_details(task_id):
     connection = get_connection()
 
@@ -119,6 +135,7 @@ def task_details(task_id):
     )
 
 @app.route("/tasks/<int:task_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit_task(task_id):
     connection = get_connection()
 
@@ -199,6 +216,7 @@ def edit_task(task_id):
     )
 
 @app.route("/tasks/<int:task_id>/delete", methods=["POST"])
+@login_required
 def delete_task(task_id):
     connection = get_connection()
 
@@ -217,6 +235,7 @@ def delete_task(task_id):
     return redirect("/tasks")
 
 @app.route("/team")
+@login_required
 def team():
     return render_template("team.html")
 
