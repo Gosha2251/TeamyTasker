@@ -1,22 +1,61 @@
 <!DOCTYPE html>
 <html lang="lv">
+
 <head>
     <meta charset="UTF-8">
     <title>Komanda</title>
 </head>
+
 <body>
 
-<h1>Komanda</h1>
+    <p>
+        <a href="/">← Atpakaļ uz sākumlapu</a>
+    </p>
 
-<nav>
-    <a href="/">Sākums</a> |
-    <a href="/tasks">Uzdevumi</a> |
-    <a href="/team">Komanda</a>
-</nav>
+    <h1>Komanda</h1>
 
-<hr>
+    {% if team and team.team_id %}
 
-<p>Šeit tiks attēlota komandas informācija.</p>
+        <h2>{{ team.team_name }}</h2>
+
+        <h3>Komandas dalībnieki</h3>
+
+        {% if members %}
+
+            <ul>
+
+                {% for member in members %}
+
+                    <li>
+                        <strong>{{ member.name }}</strong>
+                        -
+                        {{ member.email }}
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>Komandā pašlaik nav dalībnieku.</p>
+
+        {% endif %}
+
+    {% else %}
+
+        <p>
+            Tu pašlaik neesi pievienots nevienai komandai.
+        </p>
+
+        <p>
+            <a href="/team/create">
+                Izveidot komandu
+            </a>
+        </p>
+
+    {% endif %}
 
 </body>
+
 </html>

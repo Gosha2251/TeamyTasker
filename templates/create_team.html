@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="lv">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Izveidot komandu</title>
+</head>
+
+<body>
+
+    <p>
+        <a href="/team">← Atpakaļ uz komandu</a>
+    </p>
+
+    <h1>Izveidot komandu</h1>
+
+    {% if error %}
+
+        <p>
+            <strong>{{ error }}</strong>
+        </p>
+
+    {% endif %}
+
+    <form method="POST">
+
+        <p>
+            <label for="team_name">
+                <strong>Komandas nosaukums:</strong>
+            </label>
+            <br>
+
+            <input
+                type="text"
+                id="team_name"
+                name="team_name"
+                required
+            >
+        </p>
+
+        <button type="submit">
+            Izveidot komandu
+        </button>
+
+    </form>
+
+</body>
+
+</html>

@@ -237,7 +237,108 @@ def delete_task(task_id):
 @app.route("/team")
 @login_required
 def team():
-    return render_template("team.html")
+    user_id = session["user_id"]
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    u.team_id,
+                    t.name AS team_name
+                FROM Users u
+                LEFT JOIN Teams t
+                    ON u.team_id = t.id
+                WHERE u.id = %s
+            """, (user_id,))
+
+            team_data = cursor.fetchone()
+
+            members = []
+
+            if team_data and team_data["team_id"]:
+                cursor.execute("""
+                    SELECT
+                        id,
+                        name,
+                        email
+                    FROM Users
+                    WHERE team_id = %s
+                    ORDER BY name
+                """, (team_data["team_id"],))
+
+                members = cursor.fetchall()
+
+    finally:
+        connection.close()
+
+    return render_template(
+        "team.html",
+        team=team_data,
+        members=members
+    )
+
+@app.route("/team/create", methods=["GET", "POST"])
+@login_required
+def create_team():
+    error = None
+
+    if request.method == "POST":
+        team_name = request.form["team_name"].strip()
+
+        if not team_name:
+            error = "Komandas nosaukums nedrīkst būt tukšs."
+
+        else:
+            connection = get_connection()
+
+            try:
+                with connection.cursor() as cursor:
+
+                    # Pārbaudām, vai lietotājam jau nav komandas
+                    cursor.execute("""
+                        SELECT team_id
+                        FROM Users
+                        WHERE id = %s
+                    """, (session["user_id"],))
+
+                    user = cursor.fetchone()
+
+                    if user and user["team_id"] is not None:
+                        error = "Tu jau esi pievienots komandai."
+
+                    else:
+                        # Izveidojam komandu
+                        cursor.execute("""
+                            INSERT INTO Teams (name)
+                            VALUES (%s)
+                        """, (team_name,))
+
+                        team_id = cursor.lastrowid
+
+                        # Piesaistām izveidotāju jaunajai komandai
+                        cursor.execute("""
+                            UPDATE Users
+                            SET team_id = %s
+                            WHERE id = %s
+                        """, (
+                            team_id,
+                            session["user_id"]
+                        ))
+
+                        connection.commit()
+
+            finally:
+                connection.close()
+
+            if error is None:
+                return redirect("/team")
+
+    return render_template(
+        "create_team.html",
+        error=error
+    )
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
