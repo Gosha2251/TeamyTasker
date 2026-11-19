@@ -358,6 +358,164 @@ def create_team():
         error=error
     )
 
+@app.route("/team/add-member", methods=["GET", "POST"])
+@login_required
+def add_team_member():
+    error = None
+    success = None
+    user_id = session["user_id"]
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            # Noskaidrojam pieteiktā lietotāja komandu
+            # un pārbaudām, vai lietotājs ir tās vadītājs.
+            cursor.execute("""
+                SELECT
+                    t.id AS team_id,
+                    t.name AS team_name,
+                    t.owner_id
+                FROM Teams t
+                JOIN Users u
+                    ON u.team_id = t.id
+                WHERE u.id = %s
+            """, (user_id,))
+
+            team = cursor.fetchone()
+
+            if team is None:
+                return "Tev nav komandas.", 403
+
+            if team["owner_id"] != user_id:
+                return "Tikai komandas vadītājs var pievienot dalībniekus.", 403
+
+            if request.method == "POST":
+                email = request.form["email"].strip().lower()
+
+                if not email:
+                    error = "Ievadi lietotāja e-pasta adresi."
+
+                else:
+                    # Meklējam reģistrētu lietotāju.
+                    cursor.execute("""
+                        SELECT
+                            id,
+                            name,
+                            email,
+                            team_id
+                        FROM Users
+                        WHERE email = %s
+                    """, (email,))
+
+                    member = cursor.fetchone()
+
+                    if member is None:
+                        error = "Lietotājs ar šādu e-pasta adresi nav atrasts."
+
+                    elif member["id"] == user_id:
+                        error = "Tu jau esi šīs komandas vadītājs."
+
+                    elif member["team_id"] == team["team_id"]:
+                        error = "Šis lietotājs jau ir tavā komandā."
+
+                    elif member["team_id"] is not None:
+                        error = "Šis lietotājs jau ir pievienots citai komandai."
+
+                    else:
+                        cursor.execute("""
+                            UPDATE Users
+                            SET team_id = %s
+                            WHERE id = %s
+                        """, (
+                            team["team_id"],
+                            member["id"]
+                        ))
+
+                        connection.commit()
+
+                        success = (
+                            f'Lietotājs {member["name"]} '
+                            'veiksmīgi pievienots komandai.'
+                        )
+
+    finally:
+        connection.close()
+
+    return render_template(
+        "add_team_member.html",
+        error=error,
+        success=success
+    )
+
+@app.route("/team/remove-member/<int:member_id>", methods=["POST"])
+@login_required
+def remove_team_member(member_id):
+    user_id = session["user_id"]
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            # Noskaidrojam pieteiktā lietotāja komandu
+            # un pārbaudām vadītāja tiesības.
+            cursor.execute("""
+                SELECT
+                    t.id AS team_id,
+                    t.owner_id
+                FROM Teams t
+                JOIN Users u
+                    ON u.team_id = t.id
+                WHERE u.id = %s
+            """, (user_id,))
+
+            team = cursor.fetchone()
+
+            if team is None:
+                return "Tev nav komandas.", 403
+
+            if team["owner_id"] != user_id:
+                return "Tikai komandas vadītājs var noņemt dalībniekus.", 403
+
+            # Vadītājs pats sevi noņemt nedrīkst.
+            if member_id == user_id:
+                return "Komandas vadītāju nevar noņemt no savas komandas.", 400
+
+            # Pārbaudām, vai norādītais lietotājs tiešām
+            # atrodas šajā komandā.
+            cursor.execute("""
+                SELECT
+                    id,
+                    name,
+                    team_id
+                FROM Users
+                WHERE id = %s
+            """, (member_id,))
+
+            member = cursor.fetchone()
+
+            if member is None:
+                return "Lietotājs nav atrasts.", 404
+
+            if member["team_id"] != team["team_id"]:
+                return "Šis lietotājs nav tavas komandas dalībnieks.", 403
+
+            # Izņemam lietotāju no komandas.
+            cursor.execute("""
+                UPDATE Users
+                SET team_id = NULL
+                WHERE id = %s
+            """, (member_id,))
+
+            connection.commit()
+
+    finally:
+        connection.close()
+
+    return redirect("/team")
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
 

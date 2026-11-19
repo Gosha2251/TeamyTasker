@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="lv">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Pievienot dalībnieku</title>
+</head>
+
+<body>
+
+    <p>
+        <a href="/team">← Atpakaļ uz komandu</a>
+    </p>
+
+    <h1>Pievienot dalībnieku</h1>
+
+    <p>
+        Ievadi sistēmā jau reģistrēta lietotāja e-pasta adresi.
+    </p>
+
+    {% if error %}
+        <p>
+            <strong>{{ error }}</strong>
+        </p>
+    {% endif %}
+
+    {% if success %}
+        <p>
+            <strong>{{ success }}</strong>
+        </p>
+    {% endif %}
+
+    <form method="POST">
+
+        <p>
+            <label for="email">
+                <strong>Lietotāja e-pasts:</strong>
+            </label>
+
+            <br>
+
+            <input
+                type="email"
+                id="email"
+                name="email"
+                required
+            >
+        </p>
+
+        <button type="submit">
+            Pievienot komandai
+        </button>
+
+    </form>
+
+</body>
+
+</html>

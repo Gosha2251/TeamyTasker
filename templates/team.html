@@ -27,9 +27,30 @@
                 {% for member in members %}
 
                     <li>
-                        <strong>{{ member.name }}</strong>
-                        -
-                        {{ member.email }}
+
+                    <strong>{{ member.name }}</strong>
+                    -
+                    {{ member.email }}
+
+                    {% if is_owner and member.id != team.owner_id %}
+
+                    <form
+                        method="POST"
+                        action="/team/remove-member/{{ member.id }}"
+                        style="display: inline;"
+                        onsubmit="return confirm('Vai tiešām noņemt šo lietotāju no komandas?');"
+                    >
+                        <button type="submit">
+                            Noņemt
+                        </button>
+                    </form>
+
+                    {% endif %}
+
+                    {% if member.id == team.owner_id %}
+                        <strong>(Vadītājs)</strong>
+                    {% endif %}
+
                     </li>
 
                 {% endfor %}
