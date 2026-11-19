@@ -1,30 +1,107 @@
 <!DOCTYPE html>
 <html lang="lv">
+
 <head>
     <meta charset="UTF-8">
     <title>Pievienot uzdevumu</title>
 </head>
+
 <body>
 
-<h1>Pievienot uzdevumu</h1>
-
-<form method="POST">
-
     <p>
-        Nosaukums:<br>
-        <input type="text" name="title" required>
+        <a href="/tasks">← Atpakaļ uz uzdevumiem</a>
     </p>
 
-    <p>
-        Apraksts:<br>
-        <textarea name="description"></textarea>
-    </p>
+    <h1>Pievienot uzdevumu</h1>
 
-    <button type="submit">
-        Pievienot
-    </button>
+    {% if error %}
+        <p>
+            <strong>{{ error }}</strong>
+        </p>
+    {% endif %}
 
-</form>
+    <form method="POST">
+
+        <p>
+            <label for="title">
+                <strong>Nosaukums:</strong>
+            </label>
+            <br>
+
+            <input
+                type="text"
+                id="title"
+                name="title"
+                required
+            >
+        </p>
+
+        <p>
+            <label for="description">
+                <strong>Apraksts:</strong>
+            </label>
+            <br>
+
+            <textarea
+                id="description"
+                name="description"
+                rows="5"
+                cols="50"
+            ></textarea>
+        </p>
+
+        <p>
+            <label for="status_id">
+                <strong>Statuss:</strong>
+            </label>
+            <br>
+
+            <select
+                id="status_id"
+                name="status_id"
+                required
+            >
+
+                {% for status in statuses %}
+
+                    <option value="{{ status.id }}">
+                        {{ status.name }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+        </p>
+
+        <p>
+            <label for="assigned_to">
+                <strong>Atbildīgais:</strong>
+            </label>
+            <br>
+
+            <select
+                id="assigned_to"
+                name="assigned_to"
+                required
+            >
+
+                {% for member in members %}
+
+                    <option value="{{ member.id }}">
+                        {{ member.name }} ({{ member.email }})
+                    </option>
+
+                {% endfor %}
+
+            </select>
+        </p>
+
+        <button type="submit">
+            Pievienot uzdevumu
+        </button>
+
+    </form>
 
 </body>
+
 </html>

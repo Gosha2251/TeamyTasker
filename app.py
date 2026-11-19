@@ -48,62 +48,172 @@ def home():
 @app.route("/tasks")
 @login_required
 def tasks():
+    user_id = session["user_id"]
+
     connection = get_connection()
 
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT
-                t.id,
-                t.title,
-                t.description,
-                s.name AS status
-            FROM Tasks t
-            JOIN Status s
-                ON t.status_id = s.id
-            ORDER BY t.id DESC
-        """)
+    try:
+        with connection.cursor() as cursor:
 
-        tasks = cursor.fetchall()
+            # Noskaidrojam pieteiktā lietotāja komandu.
+            cursor.execute("""
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
 
-    connection.close()
+            current_user = cursor.fetchone()
+
+            if current_user is None:
+                return "Lietotājs nav atrasts.", 404
+
+            if current_user["team_id"] is None:
+                return render_template(
+                    "tasks.html",
+                    tasks=[],
+                    no_team=True
+                )
+
+            team_id = current_user["team_id"]
+
+            # Rādām TIKAI pašreizējās komandas uzdevumus.
+            cursor.execute("""
+                SELECT
+                    t.id,
+                    t.title,
+                    t.description,
+                    t.created_at,
+                    s.name AS status,
+                    u.name AS assigned_user
+                FROM Tasks t
+                JOIN Status s
+                    ON t.status_id = s.id
+                LEFT JOIN Users u
+                    ON t.assigned_to = u.id
+                WHERE t.team_id = %s
+                ORDER BY t.id DESC
+            """, (team_id,))
+
+            tasks = cursor.fetchall()
+
+    finally:
+        connection.close()
 
     return render_template(
         "tasks.html",
-        tasks=tasks
+        tasks=tasks,
+        no_team=False
     )
+
 
 @app.route("/tasks/add", methods=["GET", "POST"])
 @login_required
 def add_task():
+    user_id = session["user_id"]
+    error = None
 
-    if request.method == "POST":
+    connection = get_connection()
 
-        title = request.form["title"]
-        description = request.form["description"]
-
-        connection = get_connection()
-
+    try:
         with connection.cursor() as cursor:
 
+            # Noskaidrojam pieteiktā lietotāja komandu.
             cursor.execute("""
-                INSERT INTO Tasks
-                (
-                    title,
-                    description,
-                    status_id,
-                    assigned_to,
-                    team_id
-                )
-                VALUES
-                (%s, %s, 1, 1, 1)
-            """, (title, description))
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
 
-        connection.commit()
+            current_user = cursor.fetchone()
+
+            if current_user is None or current_user["team_id"] is None:
+                return "Lai izveidotu uzdevumu, vispirms jāpievienojas komandai.", 403
+
+            team_id = current_user["team_id"]
+
+            # Iegūstam visas komandas dalībniekus.
+            cursor.execute("""
+                SELECT
+                    id,
+                    name,
+                    email
+                FROM Users
+                WHERE team_id = %s
+                ORDER BY name
+            """, (team_id,))
+
+            members = cursor.fetchall()
+
+            # Iegūstam iespējamos statusus.
+            cursor.execute("""
+                SELECT id, name
+                FROM Status
+                ORDER BY id
+            """)
+
+            statuses = cursor.fetchall()
+
+            if request.method == "POST":
+
+                title = request.form["title"].strip()
+                description = request.form["description"].strip()
+                status_id = request.form["status_id"]
+                assigned_to = request.form["assigned_to"]
+
+                if not title:
+                    error = "Uzdevuma nosaukums nedrīkst būt tukšs."
+
+                else:
+                    # Drošības pārbaude:
+                    # atbildīgajam jābūt tās pašas komandas dalībniekam.
+                    cursor.execute("""
+                        SELECT id
+                        FROM Users
+                        WHERE id = %s
+                          AND team_id = %s
+                    """, (
+                        assigned_to,
+                        team_id
+                    ))
+
+                    assigned_user = cursor.fetchone()
+
+                    if assigned_user is None:
+                        error = "Izvēlētais lietotājs nav tavas komandas dalībnieks."
+
+                    else:
+                        cursor.execute("""
+                            INSERT INTO Tasks
+                            (
+                                title,
+                                description,
+                                status_id,
+                                assigned_to,
+                                team_id
+                            )
+                            VALUES
+                            (%s, %s, %s, %s, %s)
+                        """, (
+                            title,
+                            description,
+                            status_id,
+                            assigned_to,
+                            team_id
+                        ))
+
+                        connection.commit()
+
+                        return redirect("/tasks")
+
+    finally:
         connection.close()
 
-        return redirect("/tasks")
-
-    return render_template("add_task.html")
+    return render_template(
+        "add_task.html",
+        members=members,
+        statuses=statuses,
+        error=error
+    )
 
 @app.route("/tasks/<int:task_id>")
 @login_required

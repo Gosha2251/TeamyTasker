@@ -1,38 +1,115 @@
 <!DOCTYPE html>
 <html lang="lv">
+
 <head>
     <meta charset="UTF-8">
     <title>Uzdevumi</title>
 </head>
+
 <body>
 
-<p>
-    <a href="/tasks/add">
-        Pievienot uzdevumu
-    </a>
-</p>
+    <p>
+        <a href="/">← Atpakaļ uz sākumlapu</a>
+    </p>
 
-<h1>Uzdevumi</h1>
+    <h1>Uzdevumi</h1>
 
-<ul>
+    {% if no_team %}
 
-{% for task in tasks %}
+        <p>
+            Tu pašlaik neesi pievienots nevienai komandai.
+        </p>
 
-<li>
-    <strong>{{ task.title }}</strong>
-    -
-    {{ task.status }}
+        <p>
+            Lai strādātu ar uzdevumiem, vispirms izveido komandu
+            vai tiec pievienots jau esošai komandai.
+        </p>
 
-    <a href="/tasks/{{ task.id }}">Atvērt</a>
+        <p>
+            <a href="/team">
+                Atvērt komandas sadaļu
+            </a>
+        </p>
 
-    <br>
+    {% else %}
 
-    {{ task.description }}
-</li>
+        <p>
+            <a href="/tasks/add">
+                Pievienot uzdevumu
+            </a>
+        </p>
 
-{% endfor %}
+        <hr>
 
-</ul>
+        {% if tasks %}
+
+            <h2>Komandas uzdevumi</h2>
+
+            <ul>
+
+                {% for task in tasks %}
+
+                    <li>
+
+                        <strong>
+                            {{ task.title }}
+                        </strong>
+
+                        -
+                        Statuss: {{ task.status }}
+
+                        <br>
+
+                        {% if task.assigned_user %}
+
+                            Atbildīgais:
+                            {{ task.assigned_user }}
+
+                        {% else %}
+
+                            Atbildīgais nav piešķirts
+
+                        {% endif %}
+
+                        <br>
+
+                        {% if task.description %}
+
+                            Apraksts:
+                            {{ task.description }}
+
+                            <br>
+
+                        {% endif %}
+
+                        <a href="/tasks/{{ task.id }}">
+                            Atvērt
+                        </a>
+
+                        <br>
+                        <br>
+
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                Komandai pašlaik nav neviena uzdevuma.
+            </p>
+
+            <p>
+                Izveido pirmo uzdevumu, izmantojot pogu
+                “Pievienot uzdevumu”.
+            </p>
+
+        {% endif %}
+
+    {% endif %}
 
 </body>
+
 </html>
