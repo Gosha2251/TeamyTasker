@@ -218,10 +218,32 @@ def add_task():
 @app.route("/tasks/<int:task_id>")
 @login_required
 def task_details(task_id):
+    user_id = session["user_id"]
+
     connection = get_connection()
 
     try:
         with connection.cursor() as cursor:
+
+            # Noskaidrojam pašreizējā lietotāja komandu.
+            cursor.execute("""
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
+
+            current_user = cursor.fetchone()
+
+            if current_user is None:
+                return "Lietotājs nav atrasts.", 404
+
+            if current_user["team_id"] is None:
+                return "Tu neesi pievienots nevienai komandai.", 403
+
+            team_id = current_user["team_id"]
+
+            # Uzdevumu drīkst atvērt tikai tad,
+            # ja tas pieder pašreizējā lietotāja komandai.
             cursor.execute("""
                 SELECT
                     t.id,
@@ -232,11 +254,18 @@ def task_details(task_id):
                     u.name AS assigned_user,
                     tm.name AS team_name
                 FROM Tasks t
-                JOIN Status s ON t.status_id = s.id
-                LEFT JOIN Users u ON t.assigned_to = u.id
-                JOIN Teams tm ON t.team_id = tm.id
+                JOIN Status s
+                    ON t.status_id = s.id
+                LEFT JOIN Users u
+                    ON t.assigned_to = u.id
+                JOIN Teams tm
+                    ON t.team_id = tm.id
                 WHERE t.id = %s
-            """, (task_id,))
+                  AND t.team_id = %s
+            """, (
+                task_id,
+                team_id
+            ))
 
             task = cursor.fetchone()
 
@@ -244,7 +273,7 @@ def task_details(task_id):
         connection.close()
 
     if task is None:
-        return "Uzdevums nav atrasts.", 404
+        return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
 
     return render_template(
         "task_details.html",
@@ -254,42 +283,32 @@ def task_details(task_id):
 @app.route("/tasks/<int:task_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_task(task_id):
+    user_id = session["user_id"]
+    error = None
+
     connection = get_connection()
 
     try:
         with connection.cursor() as cursor:
 
-            # Saglabājam lietotāja veiktās izmaiņas
-            if request.method == "POST":
-                title = request.form["title"].strip()
-                description = request.form["description"].strip()
-                status_id = request.form["status_id"]
-                assigned_to = request.form["assigned_to"]
+            # Noskaidrojam lietotāja komandu.
+            cursor.execute("""
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
 
-                if not title:
-                    return "Uzdevuma nosaukums nedrīkst būt tukšs.", 400
+            current_user = cursor.fetchone()
 
-                cursor.execute("""
-                    UPDATE Tasks
-                    SET
-                        title = %s,
-                        description = %s,
-                        status_id = %s,
-                        assigned_to = %s
-                    WHERE id = %s
-                """, (
-                    title,
-                    description,
-                    status_id,
-                    assigned_to,
-                    task_id
-                ))
+            if current_user is None:
+                return "Lietotājs nav atrasts.", 404
 
-                connection.commit()
+            if current_user["team_id"] is None:
+                return "Tu neesi pievienots nevienai komandai.", 403
 
-                return redirect(f"/tasks/{task_id}")
+            team_id = current_user["team_id"]
 
-            # Iegūstam pašreizējos uzdevuma datus
+            # Meklējam uzdevumu TIKAI lietotāja komandā.
             cursor.execute("""
                 SELECT
                     id,
@@ -299,28 +318,88 @@ def edit_task(task_id):
                     assigned_to
                 FROM Tasks
                 WHERE id = %s
-            """, (task_id,))
+                  AND team_id = %s
+            """, (
+                task_id,
+                team_id
+            ))
 
             task = cursor.fetchone()
 
             if task is None:
-                return "Uzdevums nav atrasts.", 404
+                return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
 
-            # Iegūstam statusus dropdown izvēlnei
+            # Statusi dropdown sarakstam.
             cursor.execute("""
                 SELECT id, name
                 FROM Status
                 ORDER BY id
             """)
+
             statuses = cursor.fetchall()
 
-            # Iegūstam lietotājus dropdown izvēlnei
+            # TIKAI pašreizējās komandas dalībnieki.
             cursor.execute("""
-                SELECT id, name
+                SELECT
+                    id,
+                    name,
+                    email
                 FROM Users
+                WHERE team_id = %s
                 ORDER BY name
-            """)
-            users = cursor.fetchall()
+            """, (team_id,))
+
+            members = cursor.fetchall()
+
+            if request.method == "POST":
+                title = request.form["title"].strip()
+                description = request.form["description"].strip()
+                status_id = request.form["status_id"]
+                assigned_to = request.form["assigned_to"]
+
+                if not title:
+                    error = "Uzdevuma nosaukums nedrīkst būt tukšs."
+
+                else:
+                    # Pārbaudām, ka izvēlētais atbildīgais
+                    # tiešām pieder šai komandai.
+                    cursor.execute("""
+                        SELECT id
+                        FROM Users
+                        WHERE id = %s
+                          AND team_id = %s
+                    """, (
+                        assigned_to,
+                        team_id
+                    ))
+
+                    assigned_user = cursor.fetchone()
+
+                    if assigned_user is None:
+                        error = "Izvēlētais lietotājs nav tavas komandas dalībnieks."
+
+                    else:
+                        cursor.execute("""
+                            UPDATE Tasks
+                            SET
+                                title = %s,
+                                description = %s,
+                                status_id = %s,
+                                assigned_to = %s
+                            WHERE id = %s
+                              AND team_id = %s
+                        """, (
+                            title,
+                            description,
+                            status_id,
+                            assigned_to,
+                            task_id,
+                            team_id
+                        ))
+
+                        connection.commit()
+
+                        return redirect(f"/tasks/{task_id}")
 
     finally:
         connection.close()
@@ -329,27 +408,54 @@ def edit_task(task_id):
         "edit_task.html",
         task=task,
         statuses=statuses,
-        users=users
+        users=members,
+        error=error
     )
 
 @app.route("/tasks/<int:task_id>/delete", methods=["POST"])
 @login_required
 def delete_task(task_id):
+    user_id = session["user_id"]
+
     connection = get_connection()
 
     try:
         with connection.cursor() as cursor:
+
+            # Noskaidrojam lietotāja komandu.
+            cursor.execute("""
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
+
+            current_user = cursor.fetchone()
+
+            if current_user is None:
+                return "Lietotājs nav atrasts.", 404
+
+            if current_user["team_id"] is None:
+                return "Tu neesi pievienots nevienai komandai.", 403
+
+            team_id = current_user["team_id"]
+
+            # Dzēšam tikai savas komandas uzdevumu.
             cursor.execute("""
                 DELETE FROM Tasks
                 WHERE id = %s
-            """, (task_id,))
+                  AND team_id = %s
+            """, (
+                task_id,
+                team_id
+            ))
 
-        connection.commit()
+            connection.commit()
 
     finally:
         connection.close()
 
     return redirect("/tasks")
+
 
 @app.route("/team")
 @login_required
