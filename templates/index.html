@@ -1,39 +1,46 @@
-<!DOCTYPE html>
-<html lang="lv">
-<head>
-    <meta charset="UTF-8">
-    <title>Virtuāls uzdevumu plānotājs komandai</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-<h1>Virtuāls uzdevumu plānotājs komandai</h1>
+{% block title %}
+Sākums
+{% endblock %}
 
-<nav>
-    <a href="/">Sākums</a> |
-    <a href="/tasks">Uzdevumi</a> |
-    <a href="/team">Komanda</a> |
 
-    {% if session.get("user_id") %}
+{% block content %}
 
-        <span>
-            Lietotājs: {{ session.get("user_name") }}
-        </span>
-        |
-        <a href="/logout">Izrakstīties</a>
+<h1>
+    Sveiks, {{ session.get("user_name") }}!
+</h1>
 
-    {% else %}
+<div class="card">
 
-        <a href="/register">Reģistrēties</a> |
-        <a href="/login">Pieteikties</a>
+    <h2>Virtuāls uzdevumu plānotājs komandai</h2>
 
-    {% endif %}
-</nav>
+    <p>
+        Izmanto sistēmu komandas darba organizēšanai,
+        uzdevumu pārvaldībai un progresa uzraudzībai.
+    </p>
 
-<hr>
+</div>
 
-<h3>MariaDB tests</h3>
 
-<p>Statusu skaits datubāzē: {{ total }}</p>
+<div class="card">
 
-</body>
-</html>
+    <h2>Ātrās darbības</h2>
+
+    <p>
+        <a class="button" href="/tasks">
+            Skatīt uzdevumus
+        </a>
+
+        <a class="button" href="/tasks/add">
+            Pievienot uzdevumu
+        </a>
+
+        <a class="button" href="/team">
+            Mana komanda
+        </a>
+    </p>
+
+</div>
+
+{% endblock %}

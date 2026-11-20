@@ -31,19 +31,7 @@ def welcome():
 @app.route("/")
 @login_required
 def home():
-
-    connection = get_connection()
-
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT COUNT(*) AS total FROM Status")
-        result = cursor.fetchone()
-
-    connection.close()
-
-    return render_template(
-        "index.html",
-        total=result["total"]
-    )
+    return render_template("index.html")
 
 @app.route("/tasks")
 @login_required
@@ -225,7 +213,7 @@ def task_details(task_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pašreizējā lietotāja komandu.
+            # Noskaidrojam pieteiktā lietotāja komandu.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -242,8 +230,7 @@ def task_details(task_id):
 
             team_id = current_user["team_id"]
 
-            # Uzdevumu drīkst atvērt tikai tad,
-            # ja tas pieder pašreizējā lietotāja komandai.
+            # Atļaujam apskatīt tikai savas komandas uzdevumu.
             cursor.execute("""
                 SELECT
                     t.id,
@@ -269,16 +256,104 @@ def task_details(task_id):
 
             task = cursor.fetchone()
 
+            if task is None:
+                return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
+
+            # Nolasa komentārus kopā ar autora vārdu.
+            cursor.execute("""
+                SELECT
+                    c.id,
+                    c.text,
+                    c.created_at,
+                    c.user_id,
+                    u.name AS author_name
+                FROM Comments c
+                JOIN Users u
+                    ON c.user_id = u.id
+                WHERE c.task_id = %s
+                ORDER BY c.created_at ASC, c.id ASC
+            """, (task_id,))
+
+            comments = cursor.fetchall()
+
     finally:
         connection.close()
 
-    if task is None:
-        return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
-
     return render_template(
         "task_details.html",
-        task=task
+        task=task,
+        comments=comments
     )
+
+@app.route("/tasks/<int:task_id>/comments/add", methods=["POST"])
+@login_required
+def add_comment(task_id):
+    user_id = session["user_id"]
+    text = request.form.get("text", "").strip()
+
+    if not text:
+        return redirect(f"/tasks/{task_id}")
+
+    connection = get_connection()
+
+    try:
+        with connection.cursor() as cursor:
+
+            # Noskaidrojam pieteiktā lietotāja komandu.
+            cursor.execute("""
+                SELECT team_id
+                FROM Users
+                WHERE id = %s
+            """, (user_id,))
+
+            current_user = cursor.fetchone()
+
+            if current_user is None:
+                return "Lietotājs nav atrasts.", 404
+
+            if current_user["team_id"] is None:
+                return "Tu neesi pievienots nevienai komandai.", 403
+
+            team_id = current_user["team_id"]
+
+            # Pārbaudām, vai komentējamais uzdevums
+            # tiešām pieder lietotāja komandai.
+            cursor.execute("""
+                SELECT id
+                FROM Tasks
+                WHERE id = %s
+                  AND team_id = %s
+            """, (
+                task_id,
+                team_id
+            ))
+
+            task = cursor.fetchone()
+
+            if task is None:
+                return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
+
+            cursor.execute("""
+                INSERT INTO Comments
+                (
+                    task_id,
+                    user_id,
+                    text
+                )
+                VALUES
+                (%s, %s, %s)
+            """, (
+                task_id,
+                user_id,
+                text
+            ))
+
+            connection.commit()
+
+    finally:
+        connection.close()
+
+    return redirect(f"/tasks/{task_id}")
 
 @app.route("/tasks/<int:task_id>/edit", methods=["GET", "POST"])
 @login_required

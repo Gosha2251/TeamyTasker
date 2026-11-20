@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="lv">
+
 <head>
     <meta charset="UTF-8">
     <title>{{ task.title }}</title>
@@ -8,7 +9,9 @@
 <body>
 
     <p>
-        <a href="/tasks">← Atpakaļ uz uzdevumiem</a>
+        <a href="/tasks">
+            ← Atpakaļ uz uzdevumiem
+        </a>
     </p>
 
     <h1>Uzdevuma detaļas</h1>
@@ -30,7 +33,12 @@
 
     <p>
         <strong>Atbildīgais:</strong>
-        {{ task.assigned_user or "Nav piešķirts" }}
+
+        {% if task.assigned_user %}
+            {{ task.assigned_user }}
+        {% else %}
+            Nav piešķirts
+        {% endif %}
     </p>
 
     <p>
@@ -42,8 +50,6 @@
         <strong>Izveidots:</strong>
         {{ task.created_at }}
     </p>
-
-    <hr>
 
     <p>
         <a href="/tasks/{{ task.id }}/edit">
@@ -60,6 +66,67 @@
             Dzēst uzdevumu
         </button>
     </form>
-    
+
+    <hr>
+
+    <h2>Komentāri</h2>
+
+    {% if comments %}
+
+        {% for comment in comments %}
+
+            <div>
+
+                <p>
+                    <strong>{{ comment.author_name }}</strong>
+                    <br>
+
+                    {{ comment.text }}
+
+                    <br>
+
+                    <small>
+                        {{ comment.created_at }}
+                    </small>
+                </p>
+
+            </div>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            Šim uzdevumam pašlaik nav komentāru.
+        </p>
+
+    {% endif %}
+
+    <h3>Pievienot komentāru</h3>
+
+    <form
+        method="POST"
+        action="/tasks/{{ task.id }}/comments/add"
+    >
+
+        <p>
+            <textarea
+                name="text"
+                rows="4"
+                cols="50"
+                placeholder="Ievadi komentāru..."
+                required
+            ></textarea>
+        </p>
+
+        <button type="submit">
+            Pievienot komentāru
+        </button>
+
+    </form>
+
 </body>
+
 </html>
