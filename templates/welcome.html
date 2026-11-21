@@ -1,35 +1,38 @@
-<!DOCTYPE html>
-<html lang="lv">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Virtuāls uzdevumu plānotājs komandai</title>
-</head>
+{% block title %}
+Laipni lūdzam
+{% endblock %}
 
-<body>
+{% block content %}
 
-    <h1>Virtuāls uzdevumu plānotājs komandai</h1>
+<div class="welcome-container">
 
-    <p>
-        Sistēma paredzēta komandas uzdevumu izveidei,
-        sadalīšanai un izpildes progresa pārvaldībai.
-    </p>
+    <div class="card welcome-card">
 
-    <hr>
+        <h1>
+            Virtuāls uzdevumu plānotājs komandai
+        </h1>
 
-    <h2>Sveicināts!</h2>
+        <p class="welcome-description">
+            Vienkārša sistēma komandas uzdevumu izveidei,
+            sadalīšanai un darba progresa pārvaldībai.
+        </p>
 
-    <p>
-        Lai turpinātu darbu ar sistēmu, piesakies savā kontā
-        vai izveido jaunu lietotāja kontu.
-    </p>
+        <div class="welcome-actions">
 
-    <p>
-        <a href="/login">Pieteikties</a>
-        |
-        <a href="/register">Reģistrēties</a>
-    </p>
+            <a class="button" href="/login">
+                Pieteikties
+            </a>
 
-</body>
+            <a class="button button-secondary" href="/register">
+                Reģistrēties
+            </a>
 
-</html>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

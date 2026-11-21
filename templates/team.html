@@ -1,100 +1,131 @@
-<!DOCTYPE html>
-<html lang="lv">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Komanda</title>
-</head>
+{% block title %}
+Komanda
+{% endblock %}
 
-<body>
+{% block content %}
 
-    <p>
-        <a href="/">← Atpakaļ uz sākumlapu</a>
-    </p>
+<div class="page-header">
 
-    <h1>Komanda</h1>
+    <div>
+        <h1>Mana komanda</h1>
 
-    {% if team and team.team_id %}
+        {% if team and team.team_id %}
+            <p>{{ team.team_name }}</p>
+        {% else %}
+            <p>Komandas pārvaldība</p>
+        {% endif %}
+    </div>
 
-        <h2>{{ team.team_name }}</h2>
+    {% if is_owner %}
+        <a class="button" href="/team/add-member">
+            + Pievienot dalībnieku
+        </a>
+    {% endif %}
 
-        <h3>Komandas dalībnieki</h3>
+</div>
+
+
+{% if team and team.team_id %}
+
+    <div class="card">
+
+        <h2>Komandas dalībnieki</h2>
 
         {% if members %}
 
-            <ul>
+            <div class="member-list">
 
                 {% for member in members %}
 
-                    <li>
+                    <div class="member-row">
 
-                    <strong>{{ member.name }}</strong>
-                    -
-                    {{ member.email }}
+                        <div>
+                            <strong>{{ member.name }}</strong>
 
-                    {% if is_owner and member.id != team.owner_id %}
+                            {% if member.id == team.owner_id %}
+                                <span class="owner-badge">
+                                    Vadītājs
+                                </span>
+                            {% endif %}
 
-                    <form
-                        method="POST"
-                        action="/team/remove-member/{{ member.id }}"
-                        style="display: inline;"
-                        onsubmit="return confirm('Vai tiešām noņemt šo lietotāju no komandas?');"
-                    >
-                        <button type="submit">
-                            Noņemt
-                        </button>
-                    </form>
+                            <div class="member-email">
+                                {{ member.email }}
+                            </div>
+                        </div>
 
-                    {% endif %}
 
-                    {% if member.id == team.owner_id %}
-                        <strong>(Vadītājs)</strong>
-                    {% endif %}
+                        {% if is_owner and member.id != team.owner_id %}
 
-                    </li>
+                            <form
+                                method="POST"
+                                action="/team/remove-member/{{ member.id }}"
+                                onsubmit="return confirm('Vai tiešām noņemt šo lietotāju no komandas?');"
+                            >
+                                <button
+                                    class="button-danger"
+                                    type="submit"
+                                >
+                                    Noņemt
+                                </button>
+                            </form>
+
+                        {% endif %}
+
+                    </div>
 
                 {% endfor %}
 
-            </ul>
+            </div>
 
         {% else %}
 
-            <p>Komandā pašlaik nav dalībnieku.</p>
-
-        {% endif %}
-
-        {% if is_owner %}
-
-            <hr>
-
-            <h3>Komandas pārvaldība</h3>
-
             <p>
-            Tu esi šīs komandas vadītājs.
-            </p>
-
-            <p>
-                <a href="/team/add-member">
-                    Pievienot dalībnieku
-                </a>
+                Komandā pašlaik nav dalībnieku.
             </p>
 
         {% endif %}
 
-        {% else %}
+    </div>
 
-        <p>
-            Tu pašlaik neesi pievienots nevienai komandai.
-        </p>
 
-        <p>
-            <a href="/team/create">
-                Izveidot komandu
+    {% if is_owner %}
+
+        <div class="card">
+
+            <h2>Komandas pārvaldība</h2>
+
+            <p>
+                Tu esi šīs komandas vadītājs un vari pārvaldīt komandas dalībniekus.
+            </p>
+
+            <a class="button" href="/team/add-member">
+                Pievienot dalībnieku
             </a>
-        </p>
+
+        </div>
 
     {% endif %}
 
-</body>
 
-</html>
+{% else %}
+
+    <div class="card">
+
+        <h2>Tev vēl nav komandas</h2>
+
+        <p>
+            Izveido komandu, lai varētu pievienot dalībniekus
+            un kopīgi pārvaldīt uzdevumus.
+        </p>
+
+        <a class="button" href="/team/create">
+            Izveidot komandu
+        </a>
+
+    </div>
+
+{% endif %}
+
+{% endblock %}

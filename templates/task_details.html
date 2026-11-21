@@ -1,25 +1,36 @@
-<!DOCTYPE html>
-<html lang="lv">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>{{ task.title }}</title>
-</head>
+{% block title %}
+{{ task.title }}
+{% endblock %}
 
-<body>
+{% block content %}
 
-    <p>
-        <a href="/tasks">
-            ← Atpakaļ uz uzdevumiem
-        </a>
-    </p>
+<p>
+    <a href="/tasks">← Atpakaļ uz uzdevumiem</a>
+</p>
 
-    <h1>Uzdevuma detaļas</h1>
+<div class="page-header">
+    <div>
+        <h1>{{ task.title }}</h1>
 
-    <p>
-        <strong>Nosaukums:</strong>
-        {{ task.title }}
-    </p>
+        <p>
+            Uzdevuma detalizētā informācija
+        </p>
+    </div>
+
+    {% if task.status == "New" %}
+        <span class="status status-new">New</span>
+    {% elif task.status == "In Progress" %}
+        <span class="status status-progress">In Progress</span>
+    {% elif task.status == "Done" %}
+        <span class="status status-done">Done</span>
+    {% endif %}
+</div>
+
+<div class="card">
+
+    <h2>Uzdevuma informācija</h2>
 
     <p>
         <strong>Apraksts:</strong><br>
@@ -27,18 +38,8 @@
     </p>
 
     <p>
-        <strong>Statuss:</strong>
-        {{ task.status }}
-    </p>
-
-    <p>
         <strong>Atbildīgais:</strong>
-
-        {% if task.assigned_user %}
-            {{ task.assigned_user }}
-        {% else %}
-            Nav piešķirts
-        {% endif %}
+        {{ task.assigned_user or "Nav piešķirts" }}
     </p>
 
     <p>
@@ -51,50 +52,59 @@
         {{ task.created_at }}
     </p>
 
-    <p>
-        <a href="/tasks/{{ task.id }}/edit">
+    <div class="action-row">
+
+        <a
+            class="button"
+            href="/tasks/{{ task.id }}/edit"
+        >
             Rediģēt uzdevumu
         </a>
-    </p>
 
-    <form
-        method="POST"
-        action="/tasks/{{ task.id }}/delete"
-        onsubmit="return confirm('Vai tiešām vēlaties dzēst šo uzdevumu?');"
-    >
-        <button type="submit">
-            Dzēst uzdevumu
-        </button>
-    </form>
+        <form
+            method="POST"
+            action="/tasks/{{ task.id }}/delete"
+            onsubmit="return confirm('Vai tiešām vēlaties dzēst šo uzdevumu?');"
+        >
+            <button class="button-danger" type="submit">
+                Dzēst uzdevumu
+            </button>
+        </form>
 
-    <hr>
+    </div>
+
+</div>
+
+
+<div class="card">
 
     <h2>Komentāri</h2>
 
     {% if comments %}
 
-        {% for comment in comments %}
+        <div class="comment-list">
 
-            <div>
+            {% for comment in comments %}
 
-                <p>
-                    <strong>{{ comment.author_name }}</strong>
-                    <br>
+                <div class="comment">
 
-                    {{ comment.text }}
+                    <strong>
+                        {{ comment.author_name }}
+                    </strong>
 
-                    <br>
+                    <p>
+                        {{ comment.text }}
+                    </p>
 
                     <small>
                         {{ comment.created_at }}
                     </small>
-                </p>
 
-            </div>
+                </div>
 
-            <hr>
+            {% endfor %}
 
-        {% endfor %}
+        </div>
 
     {% else %}
 
@@ -104,6 +114,7 @@
 
     {% endif %}
 
+
     <h3>Pievienot komentāru</h3>
 
     <form
@@ -111,22 +122,21 @@
         action="/tasks/{{ task.id }}/comments/add"
     >
 
-        <p>
-            <textarea
-                name="text"
-                rows="4"
-                cols="50"
-                placeholder="Ievadi komentāru..."
-                required
-            ></textarea>
-        </p>
+        <textarea
+            name="text"
+            rows="4"
+            placeholder="Ievadi komentāru..."
+            required
+        ></textarea>
 
-        <button type="submit">
-            Pievienot komentāru
-        </button>
+        <p>
+            <button type="submit">
+                Pievienot komentāru
+            </button>
+        </p>
 
     </form>
 
-</body>
+</div>
 
-</html>
+{% endblock %}

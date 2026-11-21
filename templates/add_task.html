@@ -1,22 +1,22 @@
-<!DOCTYPE html>
-<html lang="lv">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Pievienot uzdevumu</title>
-</head>
+{% block title %}
+Pievienot uzdevumu
+{% endblock %}
 
-<body>
+{% block content %}
 
-    <p>
-        <a href="/tasks">← Atpakaļ uz uzdevumiem</a>
-    </p>
+<p>
+    <a href="/tasks">← Atpakaļ uz uzdevumiem</a>
+</p>
 
-    <h1>Pievienot uzdevumu</h1>
+<h1>Pievienot uzdevumu</h1>
+
+<div class="card form-card">
 
     {% if error %}
-        <p>
-            <strong>{{ error }}</strong>
+        <p class="error-message">
+            {{ error }}
         </p>
     {% endif %}
 
@@ -24,9 +24,8 @@
 
         <p>
             <label for="title">
-                <strong>Nosaukums:</strong>
+                Nosaukums
             </label>
-            <br>
 
             <input
                 type="text"
@@ -38,23 +37,20 @@
 
         <p>
             <label for="description">
-                <strong>Apraksts:</strong>
+                Apraksts
             </label>
-            <br>
 
             <textarea
                 id="description"
                 name="description"
                 rows="5"
-                cols="50"
             ></textarea>
         </p>
 
         <p>
             <label for="status_id">
-                <strong>Statuss:</strong>
+                Statuss
             </label>
-            <br>
 
             <select
                 id="status_id"
@@ -75,9 +71,8 @@
 
         <p>
             <label for="assigned_to">
-                <strong>Atbildīgais:</strong>
+                Atbildīgais
             </label>
-            <br>
 
             <select
                 id="assigned_to"
@@ -102,6 +97,6 @@
 
     </form>
 
-</body>
+</div>
 
-</html>
+{% endblock %}

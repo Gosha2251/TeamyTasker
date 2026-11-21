@@ -1,28 +1,33 @@
-<!DOCTYPE html>
-<html lang="lv">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Rediģēt uzdevumu</title>
-</head>
+{% block title %}
+Rediģēt uzdevumu
+{% endblock %}
 
-<body>
+{% block content %}
 
-    <p>
-        <a href="/tasks/{{ task.id }}">
-            ← Atpakaļ uz uzdevumu
-        </a>
-    </p>
+<p>
+    <a href="/tasks/{{ task.id }}">
+        ← Atpakaļ uz uzdevumu
+    </a>
+</p>
 
-    <h1>Rediģēt uzdevumu</h1>
+<h1>Rediģēt uzdevumu</h1>
+
+<div class="card form-card">
+
+    {% if error %}
+        <p class="error-message">
+            {{ error }}
+        </p>
+    {% endif %}
 
     <form method="POST">
 
         <p>
             <label for="title">
-                <strong>Nosaukums:</strong>
+                Nosaukums
             </label>
-            <br>
 
             <input
                 type="text"
@@ -35,25 +40,26 @@
 
         <p>
             <label for="description">
-                <strong>Apraksts:</strong>
+                Apraksts
             </label>
-            <br>
 
             <textarea
                 id="description"
                 name="description"
                 rows="5"
-                cols="50"
             >{{ task.description }}</textarea>
         </p>
 
         <p>
             <label for="status_id">
-                <strong>Statuss:</strong>
+                Statuss
             </label>
-            <br>
 
-            <select id="status_id" name="status_id">
+            <select
+                id="status_id"
+                name="status_id"
+                required
+            >
 
                 {% for status in statuses %}
 
@@ -73,11 +79,14 @@
 
         <p>
             <label for="assigned_to">
-                <strong>Atbildīgais:</strong>
+                Atbildīgais
             </label>
-            <br>
 
-            <select id="assigned_to" name="assigned_to">
+            <select
+                id="assigned_to"
+                name="assigned_to"
+                required
+            >
 
                 {% for user in users %}
 
@@ -101,6 +110,6 @@
 
     </form>
 
-</body>
+</div>
 
-</html>
+{% endblock %}
