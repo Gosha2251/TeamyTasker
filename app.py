@@ -541,6 +541,8 @@ def team():
 
     try:
         with connection.cursor() as cursor:
+
+            # Lietotāja komanda un komandas vadītājs
             cursor.execute("""
                 SELECT
                     u.team_id,
@@ -553,15 +555,28 @@ def team():
             """, (user_id,))
 
             team_data = cursor.fetchone()
-            
+
             is_owner = False
-
-            if team_data and team_data["owner_id"] == user_id:
-                is_owner = True
-
             members = []
 
+            statistics = {
+                "total": 0,
+                "new": 0,
+                "in_progress": 0,
+                "done": 0
+            }
+
             if team_data and team_data["team_id"]:
+
+                team_id = team_data["team_id"]
+
+                # Pārbaudām, vai pašreizējais lietotājs
+                # ir komandas vadītājs
+                if team_data["owner_id"] == user_id:
+                    is_owner = True
+
+
+                # Komandas dalībnieki
                 cursor.execute("""
                     SELECT
                         id,
@@ -570,18 +585,67 @@ def team():
                     FROM Users
                     WHERE team_id = %s
                     ORDER BY name
-                """, (team_data["team_id"],))
+                """, (team_id,))
 
                 members = cursor.fetchall()
 
+
+                # Komandas uzdevumu statistika
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) AS total,
+
+                        SUM(
+                            CASE
+                                WHEN s.name = 'New'
+                                THEN 1
+                                ELSE 0
+                            END
+                        ) AS new_count,
+
+                        SUM(
+                            CASE
+                                WHEN s.name = 'In Progress'
+                                THEN 1
+                                ELSE 0
+                            END
+                        ) AS in_progress_count,
+
+                         SUM(
+                            CASE
+                                WHEN s.name = 'Done'
+                                THEN 1
+                                ELSE 0
+                            END
+                        ) AS done_count
+
+                    FROM Tasks t
+
+                    JOIN Status s
+                        ON t.status_id = s.id
+
+                    WHERE t.team_id = %s
+                """, (team_id,))
+
+                stats_result = cursor.fetchone()
+
+                if stats_result:
+                    statistics = {
+                        "total": stats_result["total"] or 0,
+                        "new": stats_result["new_count"] or 0,
+                        "in_progress": stats_result["in_progress_count"] or 0,
+                        "done": stats_result["done_count"] or 0
+                    }
+
     finally:
-        connection.close()
+       connection.close()
 
     return render_template(
         "team.html",
         team=team_data,
         members=members,
-        is_owner=is_owner
+        is_owner=is_owner,
+        statistics=statistics
     )
 
 @app.route("/team/create", methods=["GET", "POST"])

@@ -413,7 +413,6 @@ label {
     color: #64748b;
 }
 
-
 /* WELCOME */
 
 .welcome-container {
@@ -460,4 +459,68 @@ label {
 
 .button-secondary:hover {
     background-color: #334155;
+}
+
+/* STATISTICS */
+
+.statistics-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(130px, 1fr));
+
+    gap: 15px;
+
+    margin-top: 20px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+
+    padding: 20px;
+
+    border-radius: 8px;
+
+    background-color: #f8fafc;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #64748b;
+
+    font-size: 14px;
+}
+
+
+.stat-new {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.stat-progress {
+    background-color: #fffbeb;
+    border-color: #fde68a;
+}
+
+.stat-done {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+
+@media (max-width: 700px) {
+
+    .statistics-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
 }

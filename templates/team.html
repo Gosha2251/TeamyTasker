@@ -42,7 +42,10 @@ Komanda
                     <div class="member-row">
 
                         <div>
-                            <strong>{{ member.name }}</strong>
+
+                            <strong>
+                                {{ member.name }}
+                            </strong>
 
                             {% if member.id == team.owner_id %}
                                 <span class="owner-badge">
@@ -53,6 +56,7 @@ Komanda
                             <div class="member-email">
                                 {{ member.email }}
                             </div>
+
                         </div>
 
 
@@ -63,12 +67,14 @@ Komanda
                                 action="/team/remove-member/{{ member.id }}"
                                 onsubmit="return confirm('Vai tiešām noņemt šo lietotāju no komandas?');"
                             >
+
                                 <button
                                     class="button-danger"
                                     type="submit"
                                 >
                                     Noņemt
                                 </button>
+
                             </form>
 
                         {% endif %}
@@ -86,6 +92,68 @@ Komanda
             </p>
 
         {% endif %}
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Komandas statistika</h2>
+
+        <div class="statistics-grid">
+
+            <div class="stat-card">
+
+                <span class="stat-number">
+                    {{ statistics.total }}
+                </span>
+
+                <span class="stat-label">
+                    Uzdevumi kopā
+                </span>
+
+            </div>
+
+
+            <div class="stat-card stat-new">
+
+                <span class="stat-number">
+                    {{ statistics.new }}
+                </span>
+
+                <span class="stat-label">
+                    New
+                </span>
+
+            </div>
+
+
+            <div class="stat-card stat-progress">
+
+                <span class="stat-number">
+                    {{ statistics.in_progress }}
+                </span>
+
+                <span class="stat-label">
+                    In Progress
+                </span>
+
+            </div>
+
+
+            <div class="stat-card stat-done">
+
+                <span class="stat-number">
+                    {{ statistics.done }}
+                </span>
+
+                <span class="stat-label">
+                    Done
+                </span>
+
+            </div>
+
+        </div>
 
     </div>
 
