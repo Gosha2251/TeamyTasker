@@ -10,6 +10,11 @@ load_dotenv()
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
+if not app.config["SECRET_KEY"]:
+    raise RuntimeError(
+        "SECRET_KEY nav norādīta .env failā."
+    )
+
 def login_required(view_function):
     @wraps(view_function)
     def wrapped_view(*args, **kwargs):
@@ -523,7 +528,10 @@ def delete_task(task_id):
                 task_id,
                 team_id
             ))
-
+            
+            if cursor.rowcount == 0:
+                return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
+            
             connection.commit()
 
     finally:
@@ -856,6 +864,18 @@ def remove_team_member(member_id):
 
             if member["team_id"] != team["team_id"]:
                 return "Šis lietotājs nav tavas komandas dalībnieks.", 403
+
+            # Noņemam lietotāju no viņam piešķirtajiem
+            # šīs komandas uzdevumiem.
+            cursor.execute("""
+                UPDATE Tasks
+                SET assigned_to = NULL
+                WHERE assigned_to = %s
+                    AND team_id = %s
+            """, (
+                member_id,
+                team["team_id"]
+            ))
 
             # Izņemam lietotāju no komandas.
             cursor.execute("""
