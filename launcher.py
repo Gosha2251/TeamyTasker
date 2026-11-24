@@ -2,16 +2,23 @@ import json
 import os
 import secrets
 import subprocess
+import sys
 import threading
 import time
 import tkinter as tk
 import urllib.error
 import urllib.request
 import webbrowser
+
 from pathlib import Path
+from tkinter import messagebox
 
 import pymysql
 
+
+# ============================================================
+# Programmas pamatkonfigurācija
+# ============================================================
 
 APP_NAME = "Team Task Planner"
 APP_URL = "http://127.0.0.1:5000/welcome"
@@ -21,60 +28,142 @@ DB_PORT = 3307
 DB_USER = "root"
 DB_NAME = "team_task_planner"
 
-CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
+CREATE_NO_WINDOW = (
+    0x08000000
+    if os.name == "nt"
+    else 0
+)
+
+
+# ============================================================
+# Globālie mainīgie
+# ============================================================
 
 mariadb_process = None
+mariadb_log_handle = None
 database_started_by_launcher = False
 
 
+# ============================================================
+# Failu un mapju ceļi
+# ============================================================
+
 def resource_path(*parts):
     """
-    Atgriež ceļu uz projekta resursu.
+    Atgriež ceļu uz programmas ārējiem resursiem.
 
-    Darbojas gan parastajā Python režīmā,
-    gan PyInstaller pakotnē.
+    Izstrādes režīmā resursi atrodas projekta mapē.
+
+    PyInstaller EXE režīmā runtime un database mapes
+    atrodas blakus TeamTaskPlanner.exe.
     """
-    base_path = Path(__file__).resolve().parent
+
+    if getattr(sys, "frozen", False):
+        base_path = Path(
+            sys.executable
+        ).resolve().parent
+
+    else:
+        base_path = Path(
+            __file__
+        ).resolve().parent
+
     return base_path.joinpath(*parts)
 
 
 def get_app_data_directory():
     """
-    Programmas mainīgie dati tiek glabāti lietotāja
-    LOCALAPPDATA mapē.
+    Izveido programmas datu mapi lietotāja LOCALAPPDATA.
+
+    Šajā mapē glabājas:
+    - portatīvās MariaDB dati;
+    - automātiski ģenerētā DB parole;
+    - Flask SECRET_KEY;
+    - launcher kļūdu žurnāls;
+    - MariaDB žurnāls.
     """
-    local_app_data = os.getenv("LOCALAPPDATA")
+
+    local_app_data = os.getenv(
+        "LOCALAPPDATA"
+    )
 
     if local_app_data:
-        app_data = Path(local_app_data) / "TeamTaskPlanner"
-    else:
-        app_data = Path.home() / "TeamTaskPlanner"
 
-    app_data.mkdir(
+        app_data_directory = (
+            Path(local_app_data)
+            / "TeamTaskPlanner"
+        )
+
+    else:
+
+        app_data_directory = (
+            Path.home()
+            / "TeamTaskPlanner"
+        )
+
+    app_data_directory.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    return app_data
+    return app_data_directory
 
 
 APP_DATA_DIR = get_app_data_directory()
 
-DB_DATA_DIR = APP_DATA_DIR / "mariadb-data"
-CONFIG_FILE = APP_DATA_DIR / "config.json"
+DB_DATA_DIR = (
+    APP_DATA_DIR
+    / "mariadb-data"
+)
+
+CONFIG_FILE = (
+    APP_DATA_DIR
+    / "config.json"
+)
+
+LAUNCHER_LOG_FILE = (
+    APP_DATA_DIR
+    / "launcher_error.log"
+)
+
+MARIADB_LOG_FILE = (
+    APP_DATA_DIR
+    / "mariadb.log"
+)
+
+
+# ============================================================
+# MariaDB failu atrašanās vietas
+# ============================================================
 
 MARIADB_DIR = resource_path(
     "runtime",
     "mariadb"
 )
 
-MARIADB_BIN_DIR = MARIADB_DIR / "bin"
+MARIADB_BIN_DIR = (
+    MARIADB_DIR
+    / "bin"
+)
 
-MARIADBD_EXE = MARIADB_BIN_DIR / "mariadbd.exe"
-MARIADB_EXE = MARIADB_BIN_DIR / "mariadb.exe"
-MARIADB_ADMIN_EXE = MARIADB_BIN_DIR / "mariadb-admin.exe"
+MARIADBD_EXE = (
+    MARIADB_BIN_DIR
+    / "mariadbd.exe"
+)
+
+MARIADB_EXE = (
+    MARIADB_BIN_DIR
+    / "mariadb.exe"
+)
+
+MARIADB_ADMIN_EXE = (
+    MARIADB_BIN_DIR
+    / "mariadb-admin.exe"
+)
+
 MARIADB_INSTALL_DB_EXE = (
-    MARIADB_BIN_DIR / "mariadb-install-db.exe"
+    MARIADB_BIN_DIR
+    / "mariadb-install-db.exe"
 )
 
 SQL_FILE = resource_path(
@@ -83,23 +172,48 @@ SQL_FILE = resource_path(
 )
 
 
+# ============================================================
+# Lokālā konfigurācija
+# ============================================================
+
 def load_or_create_config():
     """
-    Izveido lokālo programmas konfigurāciju
-    pirmajā palaišanas reizē.
+    Nolasa esošo Team Task Planner konfigurāciju.
+
+    Ja konfigurācija vēl neeksistē, tiek automātiski
+    ģenerēta MariaDB root parole un Flask SECRET_KEY.
     """
+
     if CONFIG_FILE.exists():
 
-        with CONFIG_FILE.open(
-            "r",
-            encoding="utf-8"
-        ) as file:
+        try:
 
-            return json.load(file)
+            with CONFIG_FILE.open(
+                "r",
+                encoding="utf-8"
+            ) as file:
+
+                config = json.load(file)
+
+            if (
+                config.get("db_password")
+                and config.get("secret_key")
+            ):
+                return config
+
+        except (
+            OSError,
+            json.JSONDecodeError
+        ):
+            pass
 
     config = {
-        "db_password": secrets.token_urlsafe(24),
-        "secret_key": secrets.token_hex(32)
+        "db_password": (
+            secrets.token_urlsafe(24)
+        ),
+        "secret_key": (
+            secrets.token_hex(32)
+        )
     }
 
     with CONFIG_FILE.open(
@@ -124,9 +238,12 @@ SECRET_KEY = CONFIG["secret_key"]
 
 def configure_environment():
     """
-    Norāda Flask aplikācijai portatīvās
-    MariaDB savienojuma parametrus.
+    Iestata portatīvās aplikācijas vides mainīgos.
+
+    Šīs vērtības pārraksta .env konfigurāciju tikai
+    pašreizējā launcher procesa laikā.
     """
+
     os.environ["DB_HOST"] = DB_HOST
     os.environ["DB_PORT"] = str(DB_PORT)
     os.environ["DB_USER"] = DB_USER
@@ -135,10 +252,37 @@ def configure_environment():
     os.environ["SECRET_KEY"] = SECRET_KEY
 
 
+# ============================================================
+# Kļūdu žurnāls
+# ============================================================
+
+def write_launcher_log(message):
+    """
+    Saglabā launcher kļūdas tekstu LOCALAPPDATA mapē.
+    """
+
+    try:
+
+        with LAUNCHER_LOG_FILE.open(
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            file.write(message)
+
+    except OSError:
+        pass
+
+
+# ============================================================
+# Nepieciešamo failu pārbaude
+# ============================================================
+
 def check_required_files():
     """
-    Pārbauda, vai MariaDB un SQL faili ir pieejami.
+    Pārbauda MariaDB un SQL failu pieejamību.
     """
+
     required_files = [
         MARIADBD_EXE,
         MARIADB_EXE,
@@ -147,11 +291,14 @@ def check_required_files():
         SQL_FILE
     ]
 
-    missing_files = [
-        str(path)
-        for path in required_files
-        if not path.exists()
-    ]
+    missing_files = []
+
+    for file_path in required_files:
+
+        if not file_path.exists():
+            missing_files.append(
+                str(file_path)
+            )
 
     if missing_files:
 
@@ -160,46 +307,31 @@ def check_required_files():
         )
 
         raise FileNotFoundError(
-            "Nav atrasti nepieciešamie faili:\n"
-            f"{missing_text}"
+            "Nav atrasti nepieciešamie faili:\n\n"
+            f"{missing_text}\n\n"
+            "Pārbaudi, vai blakus EXE atrodas "
+            "runtime un database mapes."
         )
 
 
-def database_is_ready():
-    """
-    Pārbauda, vai portatīvā MariaDB
-    pieņem savienojumus.
-    """
-    try:
-
-        connection = pymysql.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            connect_timeout=1
-        )
-
-        connection.close()
-
-        return True
-
-    except pymysql.MySQLError:
-
-        return False
-
+# ============================================================
+# MariaDB inicializācija
+# ============================================================
 
 def database_is_initialized():
     """
-    Pārbauda, vai MariaDB data direktorijā
-    jau ir izveidotas sistēmas tabulas.
+    Pārbauda, vai MariaDB sistēmas tabulas
+    jau ir izveidotas.
     """
+
     mysql_directory = (
-        DB_DATA_DIR / "mysql"
+        DB_DATA_DIR
+        / "mysql"
     )
 
     configuration_file = (
-        DB_DATA_DIR / "my.ini"
+        DB_DATA_DIR
+        / "my.ini"
     )
 
     return (
@@ -211,8 +343,9 @@ def database_is_initialized():
 def initialize_database_server():
     """
     Pirmajā palaišanas reizē inicializē
-    portatīvo MariaDB instanci.
+    neatkarīgu portatīvo MariaDB instanci.
     """
+
     if database_is_initialized():
         return
 
@@ -239,26 +372,78 @@ def initialize_database_server():
 
     if result.returncode != 0:
 
-        raise RuntimeError(
-            "Neizdevās inicializēt MariaDB.\n\n"
-            f"{result.stdout}\n"
-            f"{result.stderr}"
+        output = (
+            f"STDOUT:\n{result.stdout}\n\n"
+            f"STDERR:\n{result.stderr}"
         )
+
+        raise RuntimeError(
+            "Neizdevās inicializēt "
+            "portatīvo MariaDB.\n\n"
+            f"{output}"
+        )
+
+    if not database_is_initialized():
+
+        raise RuntimeError(
+            "MariaDB inicializācijas process beidzās, "
+            "bet nepieciešamie sistēmas faili netika "
+            "izveidoti.\n\n"
+            f"Datu mape:\n{DB_DATA_DIR}"
+        )
+
+
+# ============================================================
+# MariaDB palaišana
+# ============================================================
+
+def database_is_ready():
+    """
+    Pārbauda, vai portatīvā MariaDB atbild uz porta 3307.
+    """
+
+    try:
+
+        connection = pymysql.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            connect_timeout=1
+        )
+
+        connection.close()
+
+        return True
+
+    except pymysql.MySQLError:
+        return False
 
 
 def start_database_server():
     """
     Palaiž portatīvo MariaDB serveri.
     """
+
     global mariadb_process
+    global mariadb_log_handle
     global database_started_by_launcher
 
     if database_is_ready():
         return
 
     configuration_file = (
-        DB_DATA_DIR / "my.ini"
+        DB_DATA_DIR
+        / "my.ini"
     )
+
+    if not configuration_file.exists():
+
+        raise FileNotFoundError(
+            "Nav atrasts portatīvās MariaDB "
+            "konfigurācijas fails:\n\n"
+            f"{configuration_file}"
+        )
 
     command = [
         str(MARIADBD_EXE),
@@ -266,48 +451,82 @@ def start_database_server():
         "--console"
     ]
 
-    mariadb_process = subprocess.Popen(
-        command,
-        cwd=str(MARIADB_DIR),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=CREATE_NO_WINDOW
-    )
+    try:
+
+        mariadb_log_handle = (
+            MARIADB_LOG_FILE.open(
+                "a",
+                encoding="utf-8"
+            )
+        )
+
+        mariadb_process = subprocess.Popen(
+            command,
+            cwd=str(MARIADB_DIR),
+            stdout=mariadb_log_handle,
+            stderr=mariadb_log_handle,
+            creationflags=CREATE_NO_WINDOW
+        )
+
+    except OSError as error:
+
+        if mariadb_log_handle is not None:
+            mariadb_log_handle.close()
+            mariadb_log_handle = None
+
+        raise RuntimeError(
+            "Neizdevās palaist mariadbd.exe.\n\n"
+            f"{error}"
+        ) from error
 
     database_started_by_launcher = True
 
-    for _ in range(60):
+    for _ in range(80):
 
         if database_is_ready():
             return
 
-        if mariadb_process.poll() is not None:
+        if (
+            mariadb_process is not None
+            and mariadb_process.poll() is not None
+        ):
 
             raise RuntimeError(
                 "MariaDB process negaidīti "
-                "pārtrauca darbu."
+                "pārtrauca darbu.\n\n"
+                "Detalizēta informācija saglabāta:\n"
+                f"{MARIADB_LOG_FILE}"
             )
 
         time.sleep(0.25)
 
     raise RuntimeError(
         "MariaDB serveris netika palaists "
-        "paredzētajā laikā."
+        "paredzētajā laikā.\n\n"
+        "Detalizēta informācija saglabāta:\n"
+        f"{MARIADB_LOG_FILE}"
     )
 
 
+# ============================================================
+# Aplikācijas datubāzes izveide
+# ============================================================
+
 def application_database_exists():
     """
-    Pārbauda, vai team_task_planner datubāze
-    portatīvajā MariaDB jau eksistē.
+    Pārbauda, vai portatīvajā MariaDB jau
+    eksistē team_task_planner datubāze.
     """
+
     connection = pymysql.connect(
         host=DB_HOST,
         port=DB_PORT,
         user=DB_USER,
         password=DB_PASSWORD,
         connect_timeout=3,
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=(
+            pymysql.cursors.DictCursor
+        )
     )
 
     try:
@@ -329,17 +548,24 @@ def application_database_exists():
             )
 
     finally:
-
         connection.close()
 
 
 def create_application_database():
     """
     Izpilda create_database.sql tikai tad,
-    ja projekta datubāze vēl neeksistē.
+    ja aplikācijas datubāze vēl neeksistē.
     """
+
     if application_database_exists():
         return
+
+    if not SQL_FILE.exists():
+
+        raise FileNotFoundError(
+            "Nav atrasts datubāzes SQL fails:\n\n"
+            f"{SQL_FILE}"
+        )
 
     with SQL_FILE.open(
         "r",
@@ -366,19 +592,30 @@ def create_application_database():
     if result.returncode != 0:
 
         raise RuntimeError(
-            "Neizdevās izveidot projekta "
+            "Neizdevās izveidot Team Task Planner "
             "datubāzi.\n\n"
-            f"{result.stdout}\n"
-            f"{result.stderr}"
+            f"STDOUT:\n{result.stdout}\n\n"
+            f"STDERR:\n{result.stderr}"
         )
 
+    if not application_database_exists():
+
+        raise RuntimeError(
+            "SQL fails tika izpildīts, bet "
+            "team_task_planner datubāze netika atrasta."
+        )
+
+
+# ============================================================
+# Flask serveris
+# ============================================================
 
 def run_flask_server():
     """
     Importē Flask aplikāciju tikai pēc tam,
-    kad ir sagatavota portatīvā datubāze
-    un vides mainīgie.
+    kad datubāze un vides mainīgie ir sagatavoti.
     """
+
     from app import run_server
 
     run_server()
@@ -386,9 +623,9 @@ def run_flask_server():
 
 def flask_is_ready():
     """
-    Pārbauda, vai Flask serveris jau
-    atbild uz HTTP pieprasījumiem.
+    Pārbauda, vai Flask atbild uz lokālo URL.
     """
+
     try:
 
         with urllib.request.urlopen(
@@ -408,7 +645,8 @@ def wait_for_flask():
     """
     Sagaida Flask servera palaišanos.
     """
-    for _ in range(60):
+
+    for _ in range(80):
 
         if flask_is_ready():
             return True
@@ -418,12 +656,18 @@ def wait_for_flask():
     return False
 
 
+# ============================================================
+# MariaDB apturēšana
+# ============================================================
+
 def stop_database_server():
     """
-    Korekti aptur MariaDB serveri,
-    ja launcher to ir palaidis.
+    Korekti aptur MariaDB, ja launcher to palaida.
     """
+
     global mariadb_process
+    global mariadb_log_handle
+    global database_started_by_launcher
 
     if not database_started_by_launcher:
         return
@@ -477,12 +721,28 @@ def stop_database_server():
 
         mariadb_process = None
 
+    if mariadb_log_handle is not None:
+
+        try:
+            mariadb_log_handle.close()
+
+        except OSError:
+            pass
+
+        mariadb_log_handle = None
+
+    database_started_by_launcher = False
+
+
+# ============================================================
+# Launcher darbības
+# ============================================================
 
 def open_browser():
     """
-    Atver Team Task Planner
-    noklusējuma pārlūkprogrammā.
+    Atver aplikāciju noklusējuma pārlūkprogrammā.
     """
+
     webbrowser.open(
         APP_URL,
         new=2
@@ -495,7 +755,8 @@ def show_startup_error(
     message
 ):
     """
-    Parāda kļūdas statusu launcher logā.
+    Parāda kļūdu launcher logā, Windows paziņojumā
+    un saglabā pilno tekstu launcher_error.log.
     """
 
     database_status.config(
@@ -508,7 +769,16 @@ def show_startup_error(
         fg="#dc2626"
     )
 
-    print(message)
+    write_launcher_log(message)
+
+    messagebox.showerror(
+        "Team Task Planner kļūda",
+        (
+            f"{message}\n\n"
+            "Kļūdas žurnāls:\n"
+            f"{LAUNCHER_LOG_FILE}"
+        )
+    )
 
 
 def start_system(
@@ -518,14 +788,19 @@ def start_system(
     open_button
 ):
     """
-    Pilna sistēmas startēšanas secība.
+    Pilna sistēmas palaišanas secība.
 
-    Darbojas atsevišķā pavedienā,
-    lai Tkinter logs neiesaltu.
+    Funkcija darbojas atsevišķā pavedienā,
+    lai Tkinter logs startēšanas laikā neiesaltu.
     """
+
+    current_stage = "Failu pārbaude"
+
     try:
 
         check_required_files()
+
+        current_stage = "MariaDB inicializācija"
 
         root.after(
             0,
@@ -537,6 +812,8 @@ def start_system(
 
         initialize_database_server()
 
+        current_stage = "MariaDB palaišana"
+
         root.after(
             0,
             lambda: database_status.config(
@@ -546,6 +823,8 @@ def start_system(
         )
 
         start_database_server()
+
+        current_stage = "Aplikācijas DB izveide"
 
         create_application_database()
 
@@ -557,6 +836,8 @@ def start_system(
             )
         )
 
+        current_stage = "Flask konfigurācija"
+
         configure_environment()
 
         root.after(
@@ -566,6 +847,8 @@ def start_system(
                 fg="#fade24"
             )
         )
+
+        current_stage = "Flask palaišana"
 
         flask_thread = threading.Thread(
             target=run_flask_server,
@@ -592,13 +875,17 @@ def start_system(
         root.after(
             0,
             lambda: open_button.config(
-                state="normal"
+                state="normal",
+                cursor="hand2"
             )
         )
 
     except Exception as error:
 
-        error_message = str(error)
+        error_message = (
+            f"Posms: {current_stage}\n\n"
+            f"{type(error).__name__}: {error}"
+        )
 
         root.after(
             0,
@@ -613,9 +900,9 @@ def start_system(
 
 def close_program(root):
     """
-    Aptur portatīvo MariaDB
-    un aizver launcher.
+    Aptur portatīvo MariaDB un aizver launcher.
     """
+
     root.withdraw()
 
     stop_database_server()
@@ -623,25 +910,17 @@ def close_program(root):
     root.destroy()
 
 
-def main():
+# ============================================================
+# Launcher lietotāja saskarne
+# ============================================================
 
+def main():
     root = tk.Tk()
 
     root.title(APP_NAME)
-
-    root.geometry(
-        "560x430"
-    )
-
-    root.resizable(
-        False,
-        False
-    )
-
-    # Tava pamata fona krāsa.
-    root.configure(
-        bg="#302C2C"
-    )
+    root.geometry("560x430")
+    root.resizable(False, False)
+    root.configure(bg="#302C2C")
 
 
     # Programmas nosaukums
@@ -691,7 +970,7 @@ def main():
     )
 
 
-    # Flask programmas statuss
+    # Programmas statuss
     application_status = tk.Label(
         status_frame,
         text="Programma: Gaida...",
@@ -729,7 +1008,7 @@ def main():
     )
 
 
-    # Programmas URL
+    # URL
     address_label = tk.Label(
         root,
         text=APP_URL,
@@ -750,8 +1029,7 @@ def main():
 
     address_label.bind(
         "<Button-1>",
-        lambda event:
-        open_browser()
+        lambda event: open_browser()
     )
 
 
@@ -773,7 +1051,7 @@ def main():
         relief="flat",
         padx=25,
         pady=9,
-        cursor="hand2"
+        cursor="arrow"
     )
 
     open_button.pack(
@@ -781,7 +1059,7 @@ def main():
     )
 
 
-    # Tavs informatīvais bloks
+    # Informatīvais teksts
     info_label = tk.Label(
         root,
         text=(
@@ -805,8 +1083,7 @@ def main():
     close_button = tk.Button(
         root,
         text="Aizvērt",
-        command=lambda:
-        close_program(root),
+        command=lambda: close_program(root),
         font=(
             "Segoe UI",
             10
@@ -827,12 +1104,11 @@ def main():
     # Loga X poga
     root.protocol(
         "WM_DELETE_WINDOW",
-        lambda:
-        close_program(root)
+        lambda: close_program(root)
     )
 
 
-    # Pilnais DB + Flask starta process.
+    # DB un Flask startēšana atsevišķā pavedienā
     startup_thread = threading.Thread(
         target=start_system,
         args=(
@@ -845,7 +1121,6 @@ def main():
     )
 
     startup_thread.start()
-
 
     root.mainloop()
 
