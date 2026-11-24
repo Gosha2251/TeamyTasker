@@ -24,3 +24,11 @@ Desktop.ini
 # Database backups
 *.sql.bak
 *.db.bak
+
+# mariadb 
+runtime/
+
+# .exe
+dist/ 
+build/
+*.spec
