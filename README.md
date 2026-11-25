@@ -1,20 +1,27 @@
-# Virtuāls uzdevumu plānotājs komandai
+# TeamyTasker
 
-Tīmekļa lietotne komandas darba un uzdevumu organizēšanai. Sistēma ļauj veidot komandas, pārvaldīt to dalībniekus, izveidot un piešķirt uzdevumus, sekot uzdevumu statusiem un pievienot komentārus.
+**TeamyTasker!** ir tīmekļa lietotne komandas uzdevumu organizēšanai un pārvaldībai.
+
+Sistēmas ļauj reģistrēt lietotājus, izveidot komandu, pievienot dalībniekus, veidot un piešķirt uzdevumus, mainīt to statusu, pievienot komentārus un sekot komandas darba statistikai.
+
+---
 
 ## Galvenās funkcijas
 
 - lietotāju reģistrācija un pieteikšanās;
-- komandu izveide un dalībnieku pārvaldība;
+- komandu izveide;
 - komandas vadītāja tiesības;
+- dalībnieku pievienošana un noņemšana;
 - uzdevumu izveide, apskate, rediģēšana un dzēšana;
 - uzdevumu piešķiršana komandas dalībniekiem;
 - statusi `New`, `In Progress` un `Done`;
 - komentāri pie uzdevumiem;
 - komandas uzdevumu statistika;
-- piekļuves kontrole starp komandām.
+- datu nodalīšana starp komandām.
 
-## Tehnoloģijas
+---
+
+## Izmantotās tehnoloģijas
 
 - Python
 - Flask
@@ -24,88 +31,73 @@ Tīmekļa lietotne komandas darba un uzdevumu organizēšanai. Sistēma ļauj ve
 - CSS
 - Werkzeug
 - python-dotenv
+- PyInstaller
 - Git / GitHub
 
-## Projekta struktūra
+---
 
+## Programmas palaišana
+
+### Gatavā Windows versija
+
+Gatavajā versijā nav nepieciešams atsevišķi instalēt Python vai MariaDB!
+
+1. Atvērt `TeamyTasker` programmas mapi.
+2. Palaist `TeamyTasker.exe`.
+3. Gaidīt, līdz launcher logā parādās:
 ```text
-team-task-planner_byGosha/
-│
-├── database/
-│   ├── create_database.sql
-│   ├── db.py
-│   └── team_task_planner_schema.sql
-│
-├── docs/
-│   ├── documentation.md
-│   ├── ER_diagramma_final.png
-│   └── screenshots/
-│
-├── static/
-│   └── css/
-│       └── style.css
-│
-├── templates/
-│
-├── .env.example
-├── .gitignore
-├── app.py
-├── README.md
-└── requirements.txt
+Datubāze: Aktīva
+Programma: Aktīva
 ```
 
-## Uzstādīšana un palaišana
+4. Nospiest **Atvērt pārlūkā**.
 
-Izveidot un aktivizēt virtuālo vidi:
+*Programma tiek atvērta noklusējuma tīmekļa pārlūkprogrammā.*
 
-```text
+**Svarīgi!**
+*Launcher logam programmas lietošanas laikā jāpaliek atvērtam. Aizverot logu programma pārtrauc darbību*
+
+---
+
+### Palaišana no pirmkoda
+
+1. Izveidot virtuālo vidi:
+```cmd
 python -m venv venv
+```
+
+2. Aktivizēt `.venv`:
+```cmd
 venv\Scripts\activate
 ```
 
-Instalēt projektat atkarības:
-
-```text
+3. Instalēt nepieciešamās pakotnes:
+```cmd
 pip install -r requirements.txt
 ```
 
-Izveidot MariaDB datubāzi, izmantojot:
+4. Izveidot `.env` failu pēc `.env.example` parauga un konfigurēt MariaDB savienojumu.
 
+5. Palaist programmu:
+```cmd
+python app.py
+```
+
+---
+
+## Datubāze
+
+Datubāzes sākotnējās struktūras izveides skripts:
 ```text
 database/create_database.sql
 ```
 
-izmantot konfigurācijas paraugu `.env.example`, kā `.env` un norādīt nepiecišamo DB konfigurāciju:
-
-```text
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_database_password
-DB_NAME=team_task_planner
-
-SECRET_KEY=your_secret_key
-```
-
-Palaist programmu:
-
-```text
-python app.py
-```
-
-Atvērt pārlūkā:
-
-```text
-http://127.0.0.1:5000/welcome
-```
+Gatavā portatīvā versija izmanto savu lokālo MariaDB instanci.
 
 ## Dokumentācija
 
-Detalizētāka projekta tehniskā dokumentācija:
+Detalizēta tehniskā dokumentācija atrodas:
 
 ```text
 docs/documentation.md
 ```
-
-## Autors
-
-**Deniss Cvetkovs**  
