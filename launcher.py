@@ -20,7 +20,7 @@ import pymysql
 # Programmas pamatkonfigurācija
 # ============================================================
 
-APP_NAME = "Team Task Planner"
+APP_NAME = "TeamyTasker!"
 APP_URL = "http://127.0.0.1:5000/welcome"
 
 DB_HOST = "127.0.0.1"
@@ -806,7 +806,7 @@ def start_system(
             0,
             lambda: database_status.config(
                 text="Datubāze: Inicializējas...",
-                fg="#fade24"
+                fg="yellow"
             )
         )
 
@@ -818,7 +818,7 @@ def start_system(
             0,
             lambda: database_status.config(
                 text="Datubāze: Startējas...",
-                fg="#fade24"
+                fg="yellow"
             )
         )
 
@@ -832,7 +832,7 @@ def start_system(
             0,
             lambda: database_status.config(
                 text="Datubāze: Aktīva",
-                fg="#fade24"
+                fg="limegreen"
             )
         )
 
@@ -844,7 +844,7 @@ def start_system(
             0,
             lambda: application_status.config(
                 text="Programma: Startējas...",
-                fg="#fade24"
+                fg="yellow"
             )
         )
 
@@ -868,7 +868,7 @@ def start_system(
             0,
             lambda: application_status.config(
                 text="Programma: Aktīva",
-                fg="#fade24"
+                fg="limegreen"
             )
         )
 
@@ -933,7 +933,7 @@ def main():
             "bold"
         ),
         bg="#302C2C",
-        fg="white"
+        fg="#4add6c"
     )
 
     title_label.pack(
@@ -962,7 +962,7 @@ def main():
             12
         ),
         bg="#302C2C",
-        fg="#fade24"
+        fg="yellow"
     )
 
     database_status.pack(
@@ -979,7 +979,7 @@ def main():
             12
         ),
         bg="#302C2C",
-        fg="#fade24"
+        fg="yellow"
     )
 
     application_status.pack(
@@ -998,7 +998,7 @@ def main():
             "bold"
         ),
         bg="#302C2C",
-        fg="#e5e7eb"
+        fg="limegreen"
     )
 
     address_title.pack(
@@ -1017,8 +1017,8 @@ def main():
             12,
             "underline"
         ),
-        bg="#302C2C",
-        fg="#4add6c",
+        bg="white",
+        fg="black",
         cursor="hand2"
     )
 
@@ -1043,8 +1043,8 @@ def main():
             "Segoe UI",
             11
         ),
-        bg="#4add6c",
-        fg="#292626",
+        bg="#37f162",
+        fg="black",
         activebackground="#4aa54e",
         activeforeground="white",
         disabledforeground="#777777",
@@ -1070,8 +1070,8 @@ def main():
             "Segoe UI",
             10
         ),
-        bg="#c43b67",
-        fg="#095be7"
+        bg="white",
+        fg="black",
     )
 
     info_label.pack(
@@ -1088,8 +1088,8 @@ def main():
             "Segoe UI",
             10
         ),
-        bg="#4add6c",
-        fg="#292626",
+        bg="#37f162",
+        fg="black",
         activebackground="#4aa54e",
         activeforeground="white",
         relief="flat",

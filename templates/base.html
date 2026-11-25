@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="lv">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>
         {% block title %}
-        Uzdevumu plānotājs
+        TeamyTasker!
         {% endblock %}
+        | TeamyTasker!
     </title>
 
     <link
@@ -22,19 +28,33 @@
 
     <div class="header-content">
 
-        <a href="/" class="logo">
-            Team Task Planner_byGosha
+        <a
+            href="/"
+            class="logo"
+        >
+            TeamyTasker!
         </a>
 
         {% if session.get("user_id") %}
 
         <nav class="main-nav">
-            <a href="/">Sākums</a>
-            <a href="/tasks">Uzdevumi</a>
-            <a href="/team">Komanda</a>
+
+            <a href="/">
+                Sākums
+            </a>
+
+            <a href="/tasks">
+                Uzdevumi
+            </a>
+
+            <a href="/team">
+                Komanda
+            </a>
+
         </nav>
 
         <div class="user-menu">
+
             <span>
                 {{ session.get("user_name") }}
             </span>
@@ -42,6 +62,7 @@
             <a href="/logout">
                 Izrakstīties
             </a>
+
         </div>
 
         {% endif %}
@@ -54,17 +75,19 @@
 <main class="container">
 
     {% block content %}
-
     {% endblock %}
 
 </main>
 
 
 <footer class="main-footer">
+
     <p>
-        Virtuāls uzdevumu plānotājs komandai
+        TeamyTasker! — virtuāls uzdevumu plānotājs komandai
     </p>
+
 </footer>
 
 </body>
+
 </html>
