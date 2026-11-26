@@ -9,7 +9,7 @@ Sistēmas ļauj reģistrēt lietotājus, izveidot komandu, pievienot dalībnieku
 
 ---
 
-## Galvenis funkcionāls
+## Galvenā funkcionalitāte
 
 - lietotāju reģistrācija un pieteikšanās;
 - komandu izveide;
@@ -59,7 +59,7 @@ Programma: Aktīva
 *Programma tiek atvērta noklusējuma tīmekļa pārlūkprogrammā.*
 
 **Svarīgi!**
-*Launcher logam programmas lietošanas laikā jāpaliek atvērtam. Aizverot logu programma pārtrauc darbību!*
+*Launcher logam programmas lietošanas laikā jāpaliek atvērtam. Aizverot logu, programma pārtrauc darbību!*
 
 ---
 
