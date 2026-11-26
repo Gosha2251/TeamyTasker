@@ -171,6 +171,10 @@ SQL_FILE = resource_path(
     "create_database.sql"
 )
 
+ICON_FILE = resource_path(
+    "assets",
+    "TeamyTasker.ico"
+    )
 
 # ============================================================
 # Lokālā konfigurācija
@@ -918,6 +922,15 @@ def main():
     root = tk.Tk()
 
     root.title(APP_NAME)
+
+    if ICON_FILE.exists():
+        try:
+            root.iconbitmap(
+                str(ICON_FILE)
+            )
+        except tk.TclError:
+            pass
+
     root.geometry("560x430")
     root.resizable(False, False)
     root.configure(bg="#302C2C")
@@ -933,7 +946,7 @@ def main():
             "bold"
         ),
         bg="#302C2C",
-        fg="#4add6c"
+        fg="limegreen"
     )
 
     title_label.pack(
@@ -962,7 +975,7 @@ def main():
             12
         ),
         bg="#302C2C",
-        fg="yellow"
+        fg="orange"
     )
 
     database_status.pack(
@@ -979,7 +992,7 @@ def main():
             12
         ),
         bg="#302C2C",
-        fg="yellow"
+        fg="orange"
     )
 
     application_status.pack(
@@ -1017,8 +1030,8 @@ def main():
             12,
             "underline"
         ),
-        bg="white",
-        fg="black",
+        bg="black",
+        fg="limegreen",
         cursor="hand2"
     )
 
@@ -1043,7 +1056,7 @@ def main():
             "Segoe UI",
             11
         ),
-        bg="#37f162",
+        bg="limegreen",
         fg="black",
         activebackground="#4aa54e",
         activeforeground="white",
@@ -1070,8 +1083,8 @@ def main():
             "Segoe UI",
             10
         ),
-        bg="white",
-        fg="black",
+        bg="#302C2C",
+        fg="limegreen",
     )
 
     info_label.pack(
@@ -1088,7 +1101,7 @@ def main():
             "Segoe UI",
             10
         ),
-        bg="#37f162",
+        bg="limegreen",
         fg="black",
         activebackground="#4aa54e",
         activeforeground="white",
