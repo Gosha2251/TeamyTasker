@@ -29,6 +29,8 @@ Desktop.ini
 dist/ 
 build/
 *.spec
+_internal/
+*.exe
 
 # DB 
 runtime/
