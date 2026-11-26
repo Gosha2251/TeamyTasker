@@ -1,4 +1,5 @@
-# TeamyTasker
+
+# TeamyTasker!
 
 ---
 
@@ -16,13 +17,13 @@
 
 ---
 
-# 1. Darba apraksts
+# Darba apraksts
 
 ---
 
 ## Projekta apraksts
 
-**TeamyTasker** ir tīmekļa lietotne komandas darba un uzdevumu organizēšanai.
+**TeamyTasker!** ir tīmekļa lietotne komandas darba un uzdevumu organizēšanai.
 
 Sistēma nodrošina vienotu vidi, kur komandas dalībnieki var veidot uzdevumus, piešķirt tos konkrētiem lietotājiem, mainīt izpildes statusu un izmantot komentārus saziņai par konkrētu uzdevumu.
 
@@ -71,7 +72,7 @@ Komandas vadītājam papildus ir pieejama dalībnieku pārvaldība.
 
 ---
 
-# 2. Prasības
+# Prasības
 
 ---
 
@@ -104,11 +105,11 @@ Komandas vadītājam papildus ir pieejama dalībnieku pārvaldība.
 - SQL vaicājumos jāizmanto parametrizētas vērtības;
 - aizsargātās sistēmas sadaļas nedrīkst būt pieejamas bez autentifikācijas;
 - dažādu komandu dati nedrīkst būt savstarpēji pieejami;
-- programmai jābūt viegli palaižamai uz praktiski katra datora.
+- programmai jābūt viegli palaižamai uz Windows datora, bez papildus konfigurācijas.
 
 ---
 
-# 3. Risinājuma projektējums
+# Risinājuma projektējums
 
 ---
 
@@ -150,16 +151,19 @@ Galvenā projekta struktūra:
 ```text
 TeamyTasker/
 │
+├── assets/
+│   └── TeamyTasker.ico
+│
 ├── database/
 │   ├── create_database.sql
 │   └── db.py
 │
 ├── docs/
 │   ├── documentation.md
-│   ├── ER_diagramma_final.png
-│   └── screenshots/
-│
-├── runtime/
+│   ├── ER_Diagram.pdf
+│   └── images/
+│        
+├── runtime/ (release versijā)
 │   └── mariadb/
 │
 ├── static/
@@ -167,46 +171,87 @@ TeamyTasker/
 │       └── style.css
 │
 ├── templates/
+│   ├── add_task.html
+│   ├── add_team_member.html
+│   ├── base.html
+│   ├── create_team.html
+│   ├── edit_task.html
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── task_details.html
+│   ├── tasks.html
+│   ├── team.html
+│   └── welcome.html
 │
 ├── app.py
 ├── launcher.py
+├── README.md
 ├── requirements.txt
 ├── .env.example
-└── README.md
+└── .gitignore
 ```
+
+Galveno mapju un failu uzdevumi:
+
+- `app.py` – satur Flask aplikācijas galveno funkcionalitāti: autentifikāciju, komandu pārvaldību, uzdevumus, komentārus un statistiku;
+- `launcher.py` – sagatavo portatīvo MariaDB vidi, palaiž datubāzes un Flask serveri un ļauj atvērt programmu pārlūkprogrammā;
+- `database/` – satur datubāzes savienojuma kodu un SQL failus;
+- `templates/` – satur Jinja2 HTML veidnes;
+- `static/` – satur lietotāja saskarnes CSS noformējumu;
+- `runtime/mariadb/` – satur portatīvās MariaDB darbībai nepieciešamos failus;
+- `assets/` – satur programmas vizuālos resursus, piemēram, TeamyTasker ikonu;
+- `docs/` – satur tehnisko dokumentāciju, ER diagrammu un programmas ekrānuzņēmumus;
+- `requirements.txt` – satur Python bibliotēkas, kas nepieciešamas projekta darbināšanai no pirmkoda;
+- `.env.example` – konfigurācijas faila piemērs bez īstām piekļuves parolēm.
+
+> `.env` tiek izmantots lokālajā izstrādes vidē un netiek publicēts kopā ar projekta pirmkodu.
 
 ---
 
-## Sistēmas uzbūve
+## Sistēmas darbības princips
 
-Programmas galveno daļu savstarpējā darbība:
+TeamyTasker ir lokāli darbināma tīmekļa aplikācija. Lietotāja saskarne tiek atvērta tīmekļa pārlūkprogrammā, bet programmas loģiku izpilda Flask serveris.
 
-```text
-Lietotājs
-    ↓
-Tīmekļa pārlūkprogramma
-    ↓
-Flask aplikācija
-    ↓
-PyMySQL
-    ↓
-MariaDB
-```
-
-Gatavā Windows versijā papildus tiek izmantots launcher:
+**Shēma:**
 
 ```text
 TeamyTasker.exe
-       ↓
-    Launcher
-   ↙        ↘
-MariaDB     Flask
- 3307       5000
-   ↘        ↙
- TeamyTasker
+       │
+       ▼
+   launcher.py
+       │
+       ├──────────────► Portatīvā MariaDB
+       │                   ports 3307
+       │
+       └──────────────► Flask aplikācija
+                           ports 5000
+                                │
+                                ▼
+                         Tīmekļa pārlūks
+                                │
+                                ▼
+                          TeamyTasker!
 ```
 
-Launcher kontrolē portatīvās datubāzes un Flask servera palaišanu.
+`TeamyTasker.exe` palaiž launcher. Launcher pārbauda nepieciešamos programmas failus un sagatavo portatīvo MariaDB instanci. MariaDB glabā programmas datus, savukārt Flask nodrošina programmas loģiku un tīmekļa lapas.
+
+Flask aplikācija ar MariaDB sazinās, izmantojot PyMySQL.
+
+Lietotājs programmu izmanto pārlūkprogrammā, atverot lokālo adresi:
+
+```text
+http://127.0.0.1:5000/welcome
+```
+
+Gatavā portatīvā versija izmanto:
+
+```text
+Flask:   127.0.0.1:5000
+MariaDB: 127.0.0.1:3307
+```
+
+Portatīvās datubāzes mainīgie dati un lokālā konfigurācija tiek glabāti lietotāja lokālajā `TeamTaskPlanner` datu mapē (`LOCALAPPDATA`).
 
 ---
 
@@ -214,13 +259,13 @@ Launcher kontrolē portatīvās datubāzes un Flask servera palaišanu.
 
 Sistēmā izmantotas piecas galvenās tabulas:
 
-- `Users`;
-- `Teams`;
-- `Tasks`;
-- `Status`;
-- `Comments`.
+- `Users` – lietotāju konti;
+- `Teams` – komandas;
+- `Tasks` – komandu uzdevumi;
+- `Status` – uzdevumu statusi;
+- `Comments` – uzdevumu komentāri.
 
-Galvenās attiecības:
+Galvenās datubāzes attiecības:
 
 ```text
 Users.team_id       → Teams.id
@@ -238,7 +283,11 @@ Comments.user_id    → Users.id
 
 ---
 
-![ER_diagramma](ER_Diagram.png)
+**1. att. ER diagramma**
+
+![ER_diagramma](images/ER_Diagram.png)
+
+---
 
 ---
 
@@ -254,7 +303,7 @@ Realizācijas laikā sākotnējais projektējums tika papildināts ar autentifik
 
 ---
 
-# 4. Programmas realizācija
+# Programmas realizācija
 
 ---
 
@@ -355,11 +404,15 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 *Programmas mainīgie lokālie dati tiek glabāti lietotāja `%LOCALAPPDATA%` direktorijā.*
 
+---
+
 ### Launcher skats
 
 ---
 
-**2. att. TeamyTasker launcher logs**
+**2. att. Launcher logs**
+
+![Launcher](images/launcher.png)
 
 ---
 
@@ -369,7 +422,9 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 ---
 
-**3. att. TeamyTasker publiskā sākumlapa**
+**3. att. Sākumlapa**
+
+![Welcome](images/welcome.png)
 
 ---
 
@@ -377,7 +432,9 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 ---
 
-**4. att. Lietotāja reģistrācijas forma**
+**4. att. Reģistrācijas lapa**
+
+![Register](images/Register.png)
 
 ---
 
@@ -385,7 +442,9 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 ---
 
-**5. att. Komandas uzdevumu saraksts**
+**5. att. Uzdevumu saraksts**
+
+![task_list](images/task_list.png)
 
 ---
 
@@ -393,7 +452,9 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 ---
 
-**6. att. Uzdevuma detalizētā informācija un komentāri**
+**6. att. Uzdevuma pārskats**
+
+![task_details](images/task_details.png)
 
 ---
 
@@ -401,13 +462,15 @@ Statistika tiek aprēķināta no MariaDB datiem.
 
 ---
 
-**7. att. Komandas dalībnieki un uzdevumu statistika**
+**7. att. Komandas dalībnieku saraksts**
+
+![task_list](images/team.png)
 
 ---
 
 ---
 
-# 5. Testēšana
+# Testēšana
 
 ---
 
@@ -488,50 +551,61 @@ Testētas:
 
 ---
 
-# 6. Programmas palaišana un lietošana
+# Programmas palaišana un lietošana
 
 ---
 
 ## Gatavās Windows versijas palaišana
 
 1. Palaist `TeamyTasker.exe` failu. Launcher automātiski sagatavo nepieciešamo lokālo vidi.
-2. Sagaidīt, inicializācijas pabeigšanu:
+
+2. Sagaidīt inicializācijas pabeigšanu:
+
 ```text
 Datubāze: Aktīva
 Programma: Aktīva
 ```
+
 3. Nospiest pogu `Atvērt pārlūkā`.
 
 *Programma tiek atvērta noklusējuma tīmekļa pārlūkprogrammā!*
 
 **Svarīgi!**
-*Launcher logam programmas izmantošanas laikā jāpaliek atvērtam. Savādāk programas darbība tiks pārtraukta!*
+*Launcher logam programmas izmantošanas laikā jāpaliek atvērtam. Citādi programas darbība tiks pārtraukta!*
 
 ---
 
 ## Palaišana no pirmkoda
 
 1. Izveidot virtuālo vidi:
+
 ```cmd
 python -m venv venv
 ```
 
 2. Aktivizēt `.venv`:
+
 ```cmd
 venv\Scripts\activate
 ```
 
 3. Instalēt nepieciešamās pakotnes:
+
 ```cmd
 pip install -r requirements.txt
 ```
 
-1. Konfigurēt `.env` failu pēc `.env.example` parauga.
+4. Konfigurēt `.env` failu pēc `.env.example` parauga.
 
-2. Palaist programmu:
+5. Palaist programmu:
+
 ```cmd
 python app.py
 ```
+
+**Svarīgs noteikums**
+
+*Pirms norādītajiem palaišanas soļiem uz esošā datora jābūt instalētam: Python un MariaDB*
 
 ---
 
@@ -551,7 +625,9 @@ python app.py
 
 ---
 
-# 7. Secinājumi
+# Secinājumi
+
+---
 
 Darba rezultātā izveidota funkcionējoša komandas uzdevumu pārvaldības sistēma **TeamyTasker**.
 
@@ -572,12 +648,14 @@ Turpmāk sistēmu iespējams papildināt ar:
 - paziņojumiem;
 - paroles atjaunošanu;
 - papildu lietotāju lomām;
-- automātiskajiem testiem.
-- publicēt caur hostingu.
+- automātiskajiem testiem;
+- Baltā vai tumšā fona izvēli.
 
 ---
 
-# 8. Izmantotie avoti
+# Izmantotie avoti
+
+---
 
 1. Flask dokumentācija  
    https://flask.palletsprojects.com/
@@ -599,12 +677,19 @@ Turpmāk sistēmu iespējams papildināt ar:
 
 ---
 
-# 9. Pielikumi
+# Pielikumi
 
+---
 
+- docs/ER_Diagram - ER_Diagramma
+- docs/images/ - attēli
 
 ---
 
 # Autors
 
+---
+
 Deniss Cvetkovs  
+
+Github repo: https://github.com/Gosha2251/TeamyTasker
