@@ -1,3 +1,11 @@
+"""
+MariaDB savienojuma izveide TeamyTasker! aplikācijai.
+
+Savienojuma parametri tiek nolasīti no vides mainīgajiem.
+Izstrādes režīmā tos ielādē no .env faila, bet portatīvajā
+versijā tos pirms aplikācijas palaišanas iestata launcher.
+"""
+
 import os
 
 import pymysql
@@ -8,6 +16,13 @@ load_dotenv()
 
 
 def get_connection(database=None):
+    """
+    Izveido un atgriež savienojumu ar MariaDB.
+
+    Ja datubāzes nosaukums nav norādīts argumentā,
+    tiek izmantota DB_NAME vides mainīgā vērtība.
+    """
+
     connection_database = database
 
     if connection_database is None:

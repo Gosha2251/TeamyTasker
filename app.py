@@ -5,6 +5,10 @@ from database.db import get_connection
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
+# ============================================================
+# Aplikācijas konfigurācija
+# ============================================================
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -14,6 +18,10 @@ if not app.config["SECRET_KEY"]:
     raise RuntimeError(
         "SECRET_KEY nav norādīta .env failā."
     )
+
+# ============================================================
+# Autentifikācijas palīgfunkcijas
+# ============================================================
 
 def login_required(view_function):
     @wraps(view_function)
@@ -25,6 +33,10 @@ def login_required(view_function):
         return view_function(*args, **kwargs)
 
     return wrapped_view
+
+# ============================================================
+# Publiskā un galvenā lapa
+# ============================================================
 
 @app.route("/welcome")
 def welcome():
@@ -38,6 +50,10 @@ def welcome():
 def home():
     return render_template("index.html")
 
+# ============================================================
+# Uzdevumu apskate un pārvaldība
+# ============================================================
+
 @app.route("/tasks")
 @login_required
 def tasks():
@@ -48,7 +64,7 @@ def tasks():
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu.
+            # Pieteiktā lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -69,7 +85,7 @@ def tasks():
 
             team_id = current_user["team_id"]
 
-            # Rādām TIKAI pašreizējās komandas uzdevumus.
+            # Pašreizējās komandas uzdevumu atlase.
             cursor.execute("""
                 SELECT
                     t.id,
@@ -110,7 +126,7 @@ def add_task():
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu.
+            # Pieteiktā lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -124,7 +140,7 @@ def add_task():
 
             team_id = current_user["team_id"]
 
-            # Iegūstam visas komandas dalībniekus.
+            # Komandas dalībnieku atlase.
             cursor.execute("""
                 SELECT
                     id,
@@ -137,7 +153,7 @@ def add_task():
 
             members = cursor.fetchall()
 
-            # Iegūstam iespējamos statusus.
+            # Pieejamo uzdevumu statusu atlase.
             cursor.execute("""
                 SELECT id, name
                 FROM Status
@@ -157,8 +173,7 @@ def add_task():
                     error = "Uzdevuma nosaukums nedrīkst būt tukšs."
 
                 else:
-                    # Drošības pārbaude:
-                    # atbildīgajam jābūt tās pašas komandas dalībniekam.
+                    # Pārbauda, vai izvēlētais atbildīgais pieder tai pašai komandai.
                     cursor.execute("""
                         SELECT id
                         FROM Users
@@ -218,7 +233,7 @@ def task_details(task_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu.
+            # Pieteiktā lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -235,7 +250,7 @@ def task_details(task_id):
 
             team_id = current_user["team_id"]
 
-            # Atļaujam apskatīt tikai savas komandas uzdevumu.
+            # Uzdevuma piederības pārbaude lietotāja komandai.
             cursor.execute("""
                 SELECT
                     t.id,
@@ -264,7 +279,7 @@ def task_details(task_id):
             if task is None:
                 return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
 
-            # Nolasa komentārus kopā ar autora vārdu.
+            # Komentāru un to autoru datu atlase.
             cursor.execute("""
                 SELECT
                     c.id,
@@ -304,7 +319,7 @@ def add_comment(task_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu.
+            # Pieteiktā lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -321,8 +336,7 @@ def add_comment(task_id):
 
             team_id = current_user["team_id"]
 
-            # Pārbaudām, vai komentējamais uzdevums
-            # tiešām pieder lietotāja komandai.
+            # Pārbauda, vai komentējamais uzdevums pieder lietotāja komandai.
             cursor.execute("""
                 SELECT id
                 FROM Tasks
@@ -371,7 +385,7 @@ def edit_task(task_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam lietotāja komandu.
+            # Lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -388,7 +402,7 @@ def edit_task(task_id):
 
             team_id = current_user["team_id"]
 
-            # Meklējam uzdevumu TIKAI lietotāja komandā.
+            # Uzdevuma atlase tikai lietotāja komandā.
             cursor.execute("""
                 SELECT
                     id,
@@ -409,7 +423,7 @@ def edit_task(task_id):
             if task is None:
                 return "Uzdevums nav atrasts vai nepieder tavai komandai.", 404
 
-            # Statusi dropdown sarakstam.
+            # Statusu atlase izvēles sarakstam.
             cursor.execute("""
                 SELECT id, name
                 FROM Status
@@ -418,7 +432,7 @@ def edit_task(task_id):
 
             statuses = cursor.fetchall()
 
-            # TIKAI pašreizējās komandas dalībnieki.
+            # Pašreizējās komandas dalībnieku atlase.
             cursor.execute("""
                 SELECT
                     id,
@@ -441,8 +455,7 @@ def edit_task(task_id):
                     error = "Uzdevuma nosaukums nedrīkst būt tukšs."
 
                 else:
-                    # Pārbaudām, ka izvēlētais atbildīgais
-                    # tiešām pieder šai komandai.
+                    # Pārbauda, vai izvēlētais atbildīgais pieder šai komandai.
                     cursor.execute("""
                         SELECT id
                         FROM Users
@@ -502,7 +515,7 @@ def delete_task(task_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam lietotāja komandu.
+            # Lietotāja komandas noteikšana.
             cursor.execute("""
                 SELECT team_id
                 FROM Users
@@ -519,7 +532,7 @@ def delete_task(task_id):
 
             team_id = current_user["team_id"]
 
-            # Dzēšam tikai savas komandas uzdevumu.
+            # Dzēš tikai lietotāja komandai piederošu uzdevumu.
             cursor.execute("""
                 DELETE FROM Tasks
                 WHERE id = %s
@@ -540,6 +553,10 @@ def delete_task(task_id):
     return redirect("/tasks")
 
 
+# ============================================================
+# Komandas apskate un pārvaldība
+# ============================================================
+
 @app.route("/team")
 @login_required
 def team():
@@ -550,7 +567,7 @@ def team():
     try:
         with connection.cursor() as cursor:
 
-            # Lietotāja komanda un komandas vadītājs
+            # Lietotāja komandas un komandas vadītāja datu atlase.
             cursor.execute("""
                 SELECT
                     u.team_id,
@@ -578,13 +595,12 @@ def team():
 
                 team_id = team_data["team_id"]
 
-                # Pārbaudām, vai pašreizējais lietotājs
-                # ir komandas vadītājs
+                # Pārbauda, vai pašreizējais lietotājs ir komandas vadītājs.
                 if team_data["owner_id"] == user_id:
                     is_owner = True
 
 
-                # Komandas dalībnieki
+                # Komandas dalībnieku atlase.
                 cursor.execute("""
                     SELECT
                         id,
@@ -598,7 +614,7 @@ def team():
                 members = cursor.fetchall()
 
 
-                # Komandas uzdevumu statistika
+                # Komandas uzdevumu statistikas aprēķins.
                 cursor.execute("""
                     SELECT
                         COUNT(*) AS total,
@@ -673,7 +689,7 @@ def create_team():
             try:
                 with connection.cursor() as cursor:
 
-                    # Pārbaudām, vai lietotājam jau nav komandas
+                    # Pārbauda, vai lietotājs jau ir pievienots komandai.
                     cursor.execute("""
                         SELECT team_id
                         FROM Users
@@ -686,7 +702,7 @@ def create_team():
                         error = "Tu jau esi pievienots komandai."
 
                     else:
-                        # Izveidojam komandu
+                        # Jaunas komandas izveide.
                         cursor.execute("""
                             INSERT INTO Teams (name, owner_id)
                             VALUES (%s, %s)
@@ -698,7 +714,7 @@ def create_team():
                         team_id = cursor.lastrowid
 
 
-                        # Piesaistām izveidotāju jaunajai komandai
+                        # Komandas izveidotāja piesaiste jaunajai komandai.
                         cursor.execute("""
                             UPDATE Users
                             SET team_id = %s
@@ -733,8 +749,7 @@ def add_team_member():
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu
-            # un pārbaudām, vai lietotājs ir tās vadītājs.
+            # Nosaka lietotāja komandu un pārbauda komandas vadītāja tiesības.
             cursor.execute("""
                 SELECT
                     t.id AS team_id,
@@ -761,7 +776,7 @@ def add_team_member():
                     error = "Ievadi lietotāja e-pasta adresi."
 
                 else:
-                    # Meklējam reģistrētu lietotāju.
+                    # Reģistrēta lietotāja meklēšana pēc e-pasta adreses.
                     cursor.execute("""
                         SELECT
                             id,
@@ -822,8 +837,7 @@ def remove_team_member(member_id):
     try:
         with connection.cursor() as cursor:
 
-            # Noskaidrojam pieteiktā lietotāja komandu
-            # un pārbaudām vadītāja tiesības.
+            # Nosaka lietotāja komandu un pārbauda komandas vadītāja tiesības.
             cursor.execute("""
                 SELECT
                     t.id AS team_id,
@@ -842,12 +856,11 @@ def remove_team_member(member_id):
             if team["owner_id"] != user_id:
                 return "Tikai komandas vadītājs var noņemt dalībniekus.", 403
 
-            # Vadītājs pats sevi noņemt nedrīkst.
+            # Neļauj komandas vadītājam noņemt pašam sevi.
             if member_id == user_id:
                 return "Komandas vadītāju nevar noņemt no savas komandas.", 400
 
-            # Pārbaudām, vai norādītais lietotājs tiešām
-            # atrodas šajā komandā.
+            # Pārbauda, vai norādītais lietotājs pieder šai komandai.
             cursor.execute("""
                 SELECT
                     id,
@@ -865,8 +878,7 @@ def remove_team_member(member_id):
             if member["team_id"] != team["team_id"]:
                 return "Šis lietotājs nav tavas komandas dalībnieks.", 403
 
-            # Noņemam lietotāju no viņam piešķirtajiem
-            # šīs komandas uzdevumiem.
+            # Noņem lietotāja piesaisti šīs komandas uzdevumiem.
             cursor.execute("""
                 UPDATE Tasks
                 SET assigned_to = NULL
@@ -877,7 +889,7 @@ def remove_team_member(member_id):
                 team["team_id"]
             ))
 
-            # Izņemam lietotāju no komandas.
+            # Noņem lietotāju no komandas.
             cursor.execute("""
                 UPDATE Users
                 SET team_id = NULL
@@ -891,6 +903,10 @@ def remove_team_member(member_id):
 
     return redirect("/team")
 
+# ============================================================
+# Lietotāju reģistrācija un autentifikācija
+# ============================================================
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
 
@@ -903,7 +919,7 @@ def register():
         password = request.form["password"]
         password_confirm = request.form["password_confirm"]
 
-        # Pamatvalidācija
+        # Reģistrācijas ievades pamatvalidācija.
         if not name:
             error = "Lūdzu, ievadi vārdu."
 
@@ -925,7 +941,7 @@ def register():
             try:
                 with connection.cursor() as cursor:
 
-                    # Pārbaudām, vai e-pasts jau nav reģistrēts
+                    # Pārbauda, vai e-pasta adrese jau nav reģistrēta.
                     cursor.execute("""
                         SELECT id
                         FROM Users
@@ -1022,6 +1038,10 @@ def login():
 def logout():
     session.clear()
     return redirect("/welcome")
+
+# ============================================================
+# Flask servera palaišana
+# ============================================================
 
 def run_server():
     app.run(

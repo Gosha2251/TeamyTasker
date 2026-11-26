@@ -171,6 +171,10 @@ SQL_FILE = resource_path(
     "create_database.sql"
 )
 
+# ============================================================
+# Ikonas faila atrašanās vieta
+# ============================================================
+
 ICON_FILE = resource_path(
     "assets",
     "TeamyTasker.ico"
@@ -776,7 +780,7 @@ def show_startup_error(
     write_launcher_log(message)
 
     messagebox.showerror(
-        "Team Task Planner kļūda",
+        "ERROR",
         (
             f"{message}\n\n"
             "Kļūdas žurnāls:\n"
